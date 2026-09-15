@@ -1,0 +1,92 @@
+.timeline {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 48px));
+  background: #fffaf0;
+  border: 2px solid #f3e0bd;
+  border-radius: 20px;
+  padding: 14px 22px 10px;
+  box-shadow: 0 10px 30px rgba(120, 80, 30, 0.18);
+  font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.timeline-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #5a4128;
+}
+
+.timeline-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a4835c;
+}
+
+.timeline-slider {
+  width: 100%;
+  appearance: none;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #cfe6a8, #7fc95a);
+  outline: none;
+  cursor: pointer;
+  margin: 4px 0 8px;
+}
+
+.timeline-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fffaf0;
+  border: 3px solid #6b4a2b;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.timeline-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fffaf0;
+  border: 3px solid #6b4a2b;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.timeline-ticks {
+  display: flex;
+  justify-content: space-between;
+}
+
+.timeline-tick {
+  border: none;
+  background: transparent;
+  color: #c2a877;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.timeline-tick:hover {
+  background: #fff2da;
+  color: #6b4a2b;
+}
+
+.timeline-tick--active {
+  background: #6b4a2b;
+  color: #fffaf0;
+}

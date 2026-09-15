@@ -1,0 +1,140 @@
+.hud {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif;
+}
+
+.hud-tabs {
+  display: flex;
+  background: #fffaf0;
+  border: 2px solid #f3e0bd;
+  border-radius: 16px;
+  padding: 4px;
+  box-shadow: 0 10px 30px rgba(120, 80, 30, 0.18);
+  gap: 4px;
+}
+
+.hud-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  padding: 8px 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #a4835c;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.hud-tab:hover {
+  background: #fff2da;
+}
+
+.hud-tab--active {
+  background: #6b4a2b;
+  color: #fffaf0;
+}
+
+.hud-score {
+  background: #fffaf0;
+  border: 2px solid #f3e0bd;
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 30px rgba(120, 80, 30, 0.18);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.hud-score-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #5a4128;
+  line-height: 1;
+}
+
+.hud-score-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a4835c;
+}
+
+.hud-compare-toggle {
+  background: #fffaf0;
+  border: 2px solid #f3e0bd;
+  border-radius: 16px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6b4a2b;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(120, 80, 30, 0.18);
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.hud-compare-toggle:hover {
+  transform: translateY(-2px);
+  border-color: #d9b36c;
+}
+
+.hud-compare-toggle:active {
+  transform: translateY(0);
+}
+
+/* grid-rows 0fr -> 1fr is what lets this collapse/expand smoothly without
+   knowing the content's height up front — the banner eases in and out as
+   the user scrubs across the early-warning boundary instead of popping */
+.hud-warning-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: grid-template-rows 0.45s ease, opacity 0.4s ease,
+    transform 0.45s ease;
+}
+
+.hud-warning-wrap--visible {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hud-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+  background: #fdeceb;
+  border: 2px solid #f3b0a8;
+  border-radius: 16px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a13d31;
+  box-shadow: 0 10px 30px rgba(160, 50, 30, 0.15);
+}
+
+.hud-warning-wrap--visible .hud-warning {
+  animation: hud-warning-pulse 2.2s ease-in-out infinite;
+}
+
+.hud-warning-icon {
+  font-size: 15px;
+}
+
+@keyframes hud-warning-pulse {
+  0%,
+  100% {
+    box-shadow: 0 10px 30px rgba(160, 50, 30, 0.15);
+  }
+  50% {
+    box-shadow: 0 10px 30px rgba(160, 50, 30, 0.35);
+  }
+}
