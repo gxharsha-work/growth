@@ -1,7 +1,7 @@
 // Static roster + peer cohort data — stand-in for a future HRIS integration (FR4)
 // and peer-group tagging (FR8). All names are fictional placeholders.
 
-export const TEAM_IDS = ['platform', 'backend']
+export const TEAM_IDS = ['platform', 'backend', 'solstice']
 
 export const TEAMS = {
   platform: {
@@ -22,6 +22,16 @@ export const TEAMS = {
       functionType: 'Backend/Platform',
     },
   },
+  // Fed by real signals from scripts/jira-ingest.js (see mockSignals.js).
+  // Fictional client engagement used to pilot the real Jira integration.
+  solstice: {
+    id: 'solstice',
+    name: 'Growth (Solstice Outdoors)',
+    cohort: {
+      sizeBucket: '1-5 engineers',
+      functionType: 'Growth Marketing',
+    },
+  },
 }
 
 export const ROSTERS = {
@@ -39,5 +49,14 @@ export const ROSTERS = {
     { name: 'Tariq Malik', role: 'Backend Engineer', team: 'backend' },
     { name: 'Grace Owusu', role: 'Backend Engineer', team: 'backend' },
     { name: 'Ken Ibarra', role: 'Backend Engineer', team: 'backend' },
+  ],
+  // Real assignees from the growth3d SCRUM Jira project.
+  solstice: [
+    { name: 'Kristen Wang', role: 'Growth Lead', team: 'solstice' },
+    { name: 'Jenny Shen', role: 'SEO & Content Strategist', team: 'solstice' },
+    { name: 'Harshavardhini Gururaj', role: 'Paid Media Manager', team: 'solstice' },
+    { name: 'Saloni Parekh', role: 'Lifecycle/CRM Marketer', team: 'solstice' },
+    { name: 'Vicky Lin', role: 'Analyst', team: 'solstice' },
+    { name: 'Harshini Sivachitravel', role: 'Referral & Partnerships Lead', team: 'solstice' },
   ],
 }

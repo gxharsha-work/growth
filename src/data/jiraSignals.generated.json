@@ -1,0 +1,13 @@
+{
+  "solstice": [
+    {
+      "week": 1,
+      "isoWeek": "2026-W38",
+      "jira": {
+        "issueCount": 6,
+        "avgCycleTimeDays": 0,
+        "sprintCompletionPct": 17
+      }
+    }
+  ]
+}

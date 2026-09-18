@@ -1,3 +1,8 @@
+// Real signals pulled from a live Jira project by scripts/jira-ingest.js
+// (`npm run ingest:jira`). Only `jira` is real so far; `github`/`calendar`
+// are neutral placeholders until GitHub ingestion lands.
+import liveJiraWeeks from './jiraSignals.generated.json'
+
 // Mock signal data for two teams across 8 consecutive weeks.
 //
 // This is deliberately hand-tuned (not `Math.random()`) so the narrative is
@@ -58,7 +63,25 @@ function buildWeeks(rows) {
 
 export const WEEK_COUNT = 8
 
+// TODO(github-ingestion): replace with real GitHub-derived values once that
+// ingestion step lands.
+const PENDING_GITHUB = { prCount: 0, avgReviewTurnaroundHours: 12, pctCommitsAfter7pm: 15 }
+const PENDING_CALENDAR = { avgMeetingHoursPerWeek: 6 }
+
+const liveTeams = Object.fromEntries(
+  Object.entries(liveJiraWeeks).map(([teamId, weeks]) => [
+    teamId,
+    weeks.map(({ week, jira }) => ({
+      week,
+      jira,
+      github: PENDING_GITHUB,
+      calendar: PENDING_CALENDAR,
+    })),
+  ])
+)
+
 export const WEEKLY_SIGNALS = {
   platform: buildWeeks(PLATFORM_ROWS),
   backend: buildWeeks(BACKEND_ROWS),
+  ...liveTeams,
 }
