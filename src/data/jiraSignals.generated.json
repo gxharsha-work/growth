@@ -5,8 +5,64 @@
       "isoWeek": "2026-W38",
       "jira": {
         "issueCount": 6,
-        "avgCycleTimeDays": 0,
-        "sprintCompletionPct": 17
+        "avgCycleTimeDays": 4,
+        "sprintCompletionPct": 17,
+        "details": [
+          {
+            "key": "SCRUM-14",
+            "summary": "TikTok Spark Ads creative testing",
+            "status": "Testing",
+            "countsAsDone": false,
+            "cycleTimeDays": 4.05,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-13",
+            "summary": "Launch Meta Advantage+ shopping campaign",
+            "status": "Done",
+            "countsAsDone": true,
+            "cycleTimeDays": 4.04,
+            "isProxy": false,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-11",
+            "summary": "Rewrite copy for 10 highest-traffic category pages",
+            "status": "In Progress",
+            "countsAsDone": false,
+            "cycleTimeDays": 4.05,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-10",
+            "summary": "Keyword & content gap analysis",
+            "status": "In Progress",
+            "countsAsDone": false,
+            "cycleTimeDays": 0,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-2",
+            "summary": "[Legacy] Audit old affiliate partnerships",
+            "status": "To Do",
+            "countsAsDone": false,
+            "cycleTimeDays": null,
+            "isProxy": null,
+            "excludedReason": "never entered In Progress/Testing"
+          },
+          {
+            "key": "SCRUM-1",
+            "summary": "[Legacy] Migrate old blog CMS",
+            "status": "Idea",
+            "countsAsDone": false,
+            "cycleTimeDays": null,
+            "isProxy": null,
+            "excludedReason": "never entered In Progress/Testing"
+          }
+        ]
       }
     }
   ]

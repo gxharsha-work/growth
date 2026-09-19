@@ -1,7 +1,9 @@
-// Real signals pulled from a live Jira project by scripts/jira-ingest.js
-// (`npm run ingest:jira`). Only `jira` is real so far; `github`/`calendar`
-// are neutral placeholders until GitHub ingestion lands.
+// Real signals pulled by scripts/jira-ingest.js (`npm run ingest:jira`) and
+// scripts/google-calendar-ingest.js (`npm run ingest:calendar`). Only
+// `jira`/`calendar` are real so far; `github` is a neutral placeholder
+// until that ingestion step lands.
 import liveJiraWeeks from './jiraSignals.generated.json'
+import liveCalendarWeeks from './calendarSignals.generated.json'
 
 // Mock signal data for two teams across 8 consecutive weeks.
 //
@@ -68,16 +70,30 @@ export const WEEK_COUNT = 8
 const PENDING_GITHUB = { prCount: 0, avgReviewTurnaroundHours: 12, pctCommitsAfter7pm: 15 }
 const PENDING_CALENDAR = { avgMeetingHoursPerWeek: 6 }
 
+// Jira and calendar ingestion run independently (different days, different
+// cadences), so merge by `isoWeek` rather than trusting each file's stored
+// `week` index — that keeps the two sources from drifting out of sync.
+// Jira is the anchor signal: a week with calendar data but no jira data has
+// nothing to show (healthScore.js requires `signals.jira`), so it's
+// dropped rather than given a placeholder.
+const liveTeamIds = new Set([...Object.keys(liveJiraWeeks), ...Object.keys(liveCalendarWeeks)])
+
 const liveTeams = Object.fromEntries(
-  Object.entries(liveJiraWeeks).map(([teamId, weeks]) => [
-    teamId,
-    weeks.map(({ week, jira }) => ({
-      week,
-      jira,
+  Array.from(liveTeamIds).map((teamId) => {
+    const jiraByWeek = new Map((liveJiraWeeks[teamId] ?? []).map((row) => [row.isoWeek, row.jira]))
+    const calendarByWeek = new Map(
+      (liveCalendarWeeks[teamId] ?? []).map((row) => [row.isoWeek, row.calendar])
+    )
+
+    const weeks = [...jiraByWeek.keys()].sort().map((isoWeek, i) => ({
+      week: i + 1,
+      jira: jiraByWeek.get(isoWeek),
       github: PENDING_GITHUB,
-      calendar: PENDING_CALENDAR,
-    })),
-  ])
+      calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
+    }))
+
+    return [teamId, weeks]
+  })
 )
 
 export const WEEKLY_SIGNALS = {

@@ -12,6 +12,7 @@
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { getIsoWeek } from './lib/iso-week.js'
 
 const TEAM_ID = 'solstice'
 const BOARD_ID = 1
@@ -50,15 +51,6 @@ async function fetchJson(path) {
   return res.json()
 }
 
-function getIsoWeek(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
-  const dayNum = d.getUTCDay() || 7
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-  const weekNum = Math.ceil(((d - yearStart) / 86400000 + 1) / 7)
-  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`
-}
-
 async function getActiveSprintId() {
   const data = await fetchJson(
     `/rest/agile/1.0/board/${BOARD_ID}/sprint?state=active`
@@ -70,11 +62,15 @@ async function getActiveSprintId() {
 
 async function getSprintIssues(sprintId) {
   const data = await fetchJson(
-    `/rest/api/3/search/jql?jql=sprint=${sprintId}&fields=status,created&maxResults=100`
+    `/rest/api/3/search/jql?jql=sprint=${sprintId}&fields=status,created,summary&maxResults=100`
   )
   return data.issues
 }
 
+// Always returns a diagnostic result — { include: false, reason } when the
+// issue doesn't contribute a cycle time, so callers can show every issue's
+// fate, not just the ones that made it into the average (mirrors the
+// google-calendar-ingest.js ✓/✗ pattern).
 async function computeCycleTimeDays(issueKey) {
   const issue = await fetchJson(
     `/rest/api/3/issue/${issueKey}?expand=changelog&fields=status,created`
@@ -97,19 +93,22 @@ async function computeCycleTimeDays(issueKey) {
   const isDone = issue.fields.status.statusCategory.key === 'done'
   if (isDone) {
     if (!start) start = new Date(issue.fields.created)
-    if (!end || end < start) return null
-    return { key: issueKey, days: (end - start) / 86400000, isProxy: false }
+    if (!end || end < start) {
+      return { key: issueKey, include: false, reason: 'marked Done but no Done transition found in changelog' }
+    }
+    return { key: issueKey, include: true, days: (end - start) / 86400000, isProxy: false }
   }
 
   // Not done yet — usable as an "elapsed so far" proxy if it's in progress.
   if (start) {
     return {
       key: issueKey,
+      include: true,
       days: (Date.now() - start) / 86400000,
       isProxy: true,
     }
   }
-  return null
+  return { key: issueKey, include: false, reason: 'never entered In Progress/Testing' }
 }
 
 async function main() {
@@ -124,11 +123,36 @@ async function main() {
     ? Math.round((100 * doneCount) / issueCount)
     : 0
 
-  const cycleTimes = []
+  console.log(`Sprint ${sprintId} issues (${issueCount} total, ${doneCount} counted as done):`)
   for (const issue of issues) {
-    const result = await computeCycleTimeDays(issue.key)
-    if (result) cycleTimes.push(result)
+    const done = issue.fields.status.statusCategory.key === 'done'
+    console.log(
+      `  ${issue.key} "${issue.fields.summary}" — status: ${issue.fields.status.name}` +
+        (done ? ' ✓ counts toward sprintCompletionPct' : '')
+    )
   }
+
+  const cycleResults = []
+  for (const issue of issues) {
+    cycleResults.push(await computeCycleTimeDays(issue.key))
+  }
+  const cycleTimes = cycleResults.filter((r) => r.include)
+
+  // Per-issue breakdown, persisted alongside the aggregates so the UI can
+  // show exactly which issues fed a given week's numbers (not just the
+  // final avgCycleTimeDays/sprintCompletionPct).
+  const details = issues.map((issue) => {
+    const cycle = cycleResults.find((r) => r.key === issue.key)
+    return {
+      key: issue.key,
+      summary: issue.fields.summary,
+      status: issue.fields.status.name,
+      countsAsDone: issue.fields.status.statusCategory.key === 'done',
+      cycleTimeDays: cycle.include ? Math.round(cycle.days * 100) / 100 : null,
+      isProxy: cycle.include ? cycle.isProxy : null,
+      excludedReason: cycle.include ? null : cycle.reason,
+    }
+  })
 
   const completedCycleTimes = cycleTimes.filter((c) => !c.isProxy)
   const usingProxy = completedCycleTimes.length === 0 && cycleTimes.length > 0
@@ -144,11 +168,13 @@ async function main() {
     )
   }
 
-  console.log('Per-issue cycle time diagnostics:')
-  for (const c of cycleTimes) {
-    console.log(
-      `  ${c.key}: ${c.days.toFixed(2)}d${c.isProxy ? ' (proxy, still in progress)' : ''}`
-    )
+  console.log('\nCycle time diagnostics (used for avgCycleTimeDays):')
+  for (const r of cycleResults) {
+    if (r.include) {
+      console.log(`  ✓ ${r.key}: ${r.days.toFixed(2)}d${r.isProxy ? ' (proxy, still in progress)' : ''}`)
+    } else {
+      console.log(`  ✗ ${r.key}: excluded (${r.reason})`)
+    }
   }
 
   const isoWeek = getIsoWeek(new Date())
@@ -165,7 +191,7 @@ async function main() {
   const newRow = {
     week: lastRow && lastRow.isoWeek === isoWeek ? lastRow.week : (lastRow?.week ?? 0) + 1,
     isoWeek,
-    jira: { issueCount, avgCycleTimeDays, sprintCompletionPct },
+    jira: { issueCount, avgCycleTimeDays, sprintCompletionPct, details },
   }
 
   const updatedWeeks =

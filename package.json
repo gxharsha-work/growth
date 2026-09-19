@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "ingest:jira": "node --env-file=.env scripts/jira-ingest.js"
+    "ingest:jira": "node --env-file=.env scripts/jira-ingest.js",
+    "auth:calendar": "node --env-file=.env scripts/google-calendar-auth.js",
+    "ingest:calendar": "node --env-file=.env scripts/google-calendar-ingest.js"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

@@ -1,0 +1,24 @@
+{
+  "solstice": [
+    {
+      "isoWeek": "2026-W38",
+      "calendar": {
+        "avgMeetingHoursPerWeek": 2,
+        "details": [
+          {
+            "title": "test past event",
+            "hours": 1,
+            "included": true,
+            "reason": null
+          },
+          {
+            "title": "test event",
+            "hours": 1,
+            "included": true,
+            "reason": null
+          }
+        ]
+      }
+    }
+  ]
+}
