@@ -108,6 +108,20 @@
   overflow-y: auto;
 }
 
+.hud-signal--muted {
+  font-size: 10.5px;
+  color: #a4835c;
+  background: #fffaf0;
+  border: 2px dashed #f3e0bd;
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+.hud-signal-details--error {
+  color: #a13d31;
+  word-break: break-word;
+}
+
 .hud-detail-list {
   margin: 0;
   padding-left: 16px;

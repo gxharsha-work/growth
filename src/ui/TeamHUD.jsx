@@ -2,56 +2,9 @@ import { useState } from 'react'
 import { TEAM_IDS, TEAMS } from '../data/roster'
 import { useAppStore } from '../store/appStore'
 import { getTeamWeek } from '../logic/teamHealth'
+import { SignalPill, JiraDetailsList, CalendarDetailsList } from './SignalPill'
+import ConnectCalendar from './ConnectCalendar'
 import './hud.css'
-
-// Jira/Calendar are "real" for a team once ingestion has run for it (their
-// generated JSON rows carry a `details` array); mock teams (Platform,
-// Backend) never have one, so this doubles as the real-vs-mock signal.
-function JiraDetailsList({ details }) {
-  return (
-    <ul className="hud-detail-list">
-      {details.map((d) => (
-        <li key={d.key}>
-          <strong>{d.key}</strong> "{d.summary}" — {d.status}
-          {d.countsAsDone && ' ✓ counts as done'}
-          <br />
-          {d.cycleTimeDays !== null
-            ? `cycle time: ${d.cycleTimeDays}d${d.isProxy ? ' (still in progress, proxy)' : ''}`
-            : `excluded from cycle time: ${d.excludedReason}`}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function CalendarDetailsList({ details }) {
-  return (
-    <ul className="hud-detail-list">
-      {details.map((d, i) => (
-        <li key={i}>
-          "{d.title}" — {d.included ? `${d.hours}h counted` : `excluded: ${d.reason}`}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function SignalPill({ icon, label, details, renderDetails, expanded, onToggle }) {
-  return (
-    <div className="hud-signal">
-      <button className="hud-signal-toggle" onClick={onToggle}>
-        <span className="hud-signal-icon">{icon}</span>
-        {label}
-        {details && <span className="hud-signal-caret">{expanded ? '▲' : '▼'}</span>}
-      </button>
-      {expanded && (
-        <div className="hud-signal-details">
-          {details ? renderDetails(details) : 'Mock data — no per-item breakdown available.'}
-        </div>
-      )}
-    </div>
-  )
-}
 
 export default function TeamHUD() {
   const currentTeam = useAppStore((s) => s.currentTeam)
@@ -114,6 +67,8 @@ export default function TeamHUD() {
           onToggle={() => toggleSignal('calendar')}
         />
       )}
+
+      {!isCompare && <ConnectCalendar />}
 
       <button
         className="hud-compare-toggle"
