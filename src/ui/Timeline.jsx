@@ -7,7 +7,7 @@ export default function Timeline() {
   const setWeek = useAppStore((s) => s.setWeek)
 
   return (
-    <div className="timeline">
+    <div className="timeline glass">
       <div className="timeline-header">
         <span className="timeline-title">Week {currentWeek + 1}</span>
         <span className="timeline-sub">of {WEEK_COUNT}</span>

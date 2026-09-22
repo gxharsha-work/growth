@@ -1,22 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Grid } from '@react-three/drei'
-import { useVillageStore, TILE_SIZE } from '../store/villageStore'
-import { tileCenter, worldToTile, GROUND_EXTENT } from './gridUtils'
-import { useToonGradient } from './toonGradient'
+import * as THREE from 'three'
+import { useVillageStore, listBuildableTiles, tileKey } from '../store/villageStore'
+import { tileCenter, worldToTile } from './gridUtils'
 
-const GRASS_COLOR = '#7fc95a'
-
+// The interactive layer over the island: an invisible plane that turns
+// pointer events into tile coordinates, plus the "where can I build" cues.
+// There are no grid lines — free spots appear as soft dots only while
+// placing or dragging, so the island stays organic the rest of the time.
 export default function Ground({ teamId, interactive = true }) {
-  const gradientMap = useToonGradient()
-  const glowRef = useRef()
+  const ringRef = useRef()
   const blockedRef = useRef()
-  const [hoveredValid, setHoveredValid] = useState(false)
 
-  const placingType = useVillageStore((s) => s.placingType)
+  const placing = useVillageStore((s) => s.placing)
   const draggingId = useVillageStore((s) => s.draggingId)
   const hoveredTile = useVillageStore((s) => s.hoveredTile)
   const blockedTile = useVillageStore((s) => s.blockedTile)
+  const buildings = useVillageStore((s) => s.buildingsByTeam[teamId])
   const setHoveredTile = useVillageStore((s) => s.setHoveredTile)
   const placeBuilding = useVillageStore((s) => s.placeBuilding)
   const dropBuilding = useVillageStore((s) => s.dropBuilding)
@@ -24,26 +24,42 @@ export default function Ground({ teamId, interactive = true }) {
   const inBounds = useVillageStore((s) => s.inBounds)
   const clearSelection = useVillageStore((s) => s.clearSelection)
 
+  const isActive = Boolean(placing || draggingId)
+
+  const freeTiles = useMemo(
+    () =>
+      listBuildableTiles().filter(({ col, row }) => {
+        const b = buildings?.[tileKey(col, row)]
+        return !b || b.id === draggingId
+      }),
+    [buildings, draggingId]
+  )
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime
+    if (ringRef.current) {
+      ringRef.current.material.opacity = 0.75 + Math.sin(t * 5) * 0.2
+      ringRef.current.rotation.z = t * 0.6
+    }
+    if (blockedRef.current) blockedRef.current.material.opacity = 0.55 + Math.sin(t * 30) * 0.25
+  })
+
+  if (!interactive) return null
+
   const handlePointerMove = (e) => {
     e.stopPropagation()
     const { col, row } = worldToTile(e.point.x, e.point.z)
     if (!inBounds(col, row)) {
-      setHoveredTile(null)
+      if (useVillageStore.getState().hoveredTile) setHoveredTile(null)
       return
     }
     const current = useVillageStore.getState().hoveredTile
-    if (!current || current.col !== col || current.row !== row) {
-      setHoveredTile({ col, row })
-    }
+    if (!current || current.col !== col || current.row !== row) setHoveredTile({ col, row })
   }
-
-  const handlePointerLeave = () => setHoveredTile(null)
 
   const handleClick = (e) => {
     e.stopPropagation()
-    if (!placingType) {
-      // clicking empty ground (not placing, not on a building) dismisses
-      // an open details popup, same as the X button
+    if (!placing) {
       clearSelection()
       return
     }
@@ -58,101 +74,70 @@ export default function Ground({ teamId, interactive = true }) {
     dropBuilding(teamId, col, row)
   }
 
-  const glowPos = useMemo(() => {
-    if (!hoveredTile) return null
-    const [x, z] = tileCenter(hoveredTile.col, hoveredTile.row)
-    return [x, 0.011, z]
-  }, [hoveredTile])
-
-  const blockedPos = useMemo(() => {
-    if (!blockedTile) return null
-    const [col, row] = blockedTile.split(',').map(Number)
-    const [x, z] = tileCenter(col, row)
-    return [x, 0.012, z]
-  }, [blockedTile])
-
-  useFrame(({ clock }) => {
-    if (glowRef.current) {
-      const pulse = 0.35 + Math.sin(clock.elapsedTime * 4) * 0.12
-      glowRef.current.material.opacity = pulse
-    }
-    if (blockedRef.current) {
-      const t = clock.elapsedTime
-      blockedRef.current.material.opacity =
-        0.55 + Math.sin(t * 30) * 0.25
-    }
-  })
-
-  useEffect(() => {
-    if (!interactive) return
-    if (hoveredTile) {
-      setHoveredValid(
-        !isTileOccupied(teamId, hoveredTile.col, hoveredTile.row, draggingId)
-      )
-    }
-  }, [hoveredTile, isTileOccupied, draggingId, teamId, interactive])
-
-  // outside of placing/dragging, only nudge-highlight empty tiles (per the
-  // "hover an empty tile" spec); while actively placing/dragging, also show
-  // the red variant over occupied tiles so a blocked target reads early
-  const isActive = Boolean(placingType || draggingId)
-  const showGlow =
-    interactive && Boolean(hoveredTile) && (hoveredValid || isActive)
-
-  const pointerHandlers = interactive
-    ? {
-        onPointerMove: handlePointerMove,
-        onPointerLeave: handlePointerLeave,
-        onClick: handleClick,
-        onPointerUp: handlePointerUp,
-      }
-    : {}
+  const hoverValid =
+    hoveredTile && !isTileOccupied(teamId, hoveredTile.col, hoveredTile.row, draggingId)
+  const showRing = isActive && hoveredTile
+  const blockedPos = blockedTile ? blockedTile.split(',').map(Number) : null
+  const [hoverX, hoverZ] = hoveredTile ? tileCenter(hoveredTile.col, hoveredTile.row) : [0, 0]
+  const [blockedX, blockedZ] = blockedPos ? tileCenter(blockedPos[0], blockedPos[1]) : [0, 0]
 
   return (
     <group>
-      {/* grass base */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow {...pointerHandlers}>
-        <planeGeometry args={[GROUND_EXTENT + 4, GROUND_EXTENT + 4]} />
-        <meshToonMaterial color={GRASS_COLOR} gradientMap={gradientMap} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.02, 0]}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={() => setHoveredTile(null)}
+        onClick={handleClick}
+        onPointerUp={handlePointerUp}
+      >
+        <planeGeometry args={[26, 26]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      {/* tile grid lines */}
-      <Grid
-        position={[0, 0.005, 0]}
-        args={[GROUND_EXTENT, GROUND_EXTENT]}
-        cellSize={TILE_SIZE}
-        cellThickness={1}
-        cellColor="#3f7a2e"
-        sectionSize={GROUND_EXTENT}
-        sectionThickness={1.4}
-        sectionColor="#2f5f22"
-        fadeDistance={40}
-        fadeStrength={1}
-        followCamera={false}
-        infiniteGrid={false}
-      />
+      {isActive &&
+        freeTiles.map(({ col, row }) => {
+          const [x, z] = tileCenter(col, row)
+          return (
+            <mesh key={tileKey(col, row)} position={[x, 0.03, z]} rotation={[-Math.PI / 2, 0, 0]}>
+              <circleGeometry args={[0.13, 14]} />
+              <meshBasicMaterial color="#ffffff" transparent opacity={0.7} depthWrite={false} />
+            </mesh>
+          )
+        })}
 
-      {/* hover glow on an empty tile */}
-      {showGlow && glowPos && (
-        <mesh ref={glowRef} position={glowPos} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[TILE_SIZE * 0.92, TILE_SIZE * 0.92]} />
-          <meshBasicMaterial
-            color={hoveredValid ? '#fff4c2' : '#ff6b6b'}
-            transparent
-            opacity={0.35}
-          />
-        </mesh>
+      {showRing && (
+        <group position={[hoverX, 0.05, hoverZ]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.95, 32]} />
+            <meshBasicMaterial
+              color={hoverValid ? '#ffffff' : '#ff5a5f'}
+              transparent
+              opacity={0.28}
+              depthWrite={false}
+            />
+          </mesh>
+          <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.86, 0.98, 40, 1, 0, Math.PI * 1.7]} />
+            <meshBasicMaterial
+              color={hoverValid ? '#ffd54a' : '#ff5a5f'}
+              transparent
+              opacity={0.85}
+              side={THREE.DoubleSide}
+              depthWrite={false}
+            />
+          </mesh>
+        </group>
       )}
 
-      {/* blocked-placement red flash */}
-      {interactive && blockedPos && (
+      {blockedPos && (
         <mesh
           ref={blockedRef}
-          position={blockedPos}
+          position={[blockedX, 0.06, blockedZ]}
           rotation={[-Math.PI / 2, 0, 0]}
         >
-          <planeGeometry args={[TILE_SIZE * 0.94, TILE_SIZE * 0.94]} />
-          <meshBasicMaterial color="#ff3b3b" transparent opacity={0.6} />
+          <circleGeometry args={[1, 32]} />
+          <meshBasicMaterial color="#ff3b3b" transparent opacity={0.6} depthWrite={false} />
         </mesh>
       )}
     </group>

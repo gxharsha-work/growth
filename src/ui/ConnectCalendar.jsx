@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link2 } from 'lucide-react'
 import { getCurrentWeekWindow, classifyEvent } from '../logic/meetingLoad'
 import { SignalPill, CalendarDetailsList } from './SignalPill'
 
@@ -78,7 +79,7 @@ export default function ConnectCalendar() {
 
   if (!CLIENT_ID) {
     return (
-      <div className="hud-signal hud-signal--muted">
+      <div className="hud-signal hud-signal--muted glass">
         Set VITE_GOOGLE_CALENDAR_WEB_CLIENT_ID in .env to enable "Connect your Google Calendar".
       </div>
     )
@@ -128,7 +129,7 @@ export default function ConnectCalendar() {
   if (status === 'connected' && result) {
     return (
       <SignalPill
-        icon="🔗"
+        icon={<Link2 size={15} />}
         label={`Your calendar: ${result.avgMeetingHoursPerWeek}h this week`}
         details={result.details}
         renderDetails={(d) => <CalendarDetailsList details={d} />}
@@ -140,11 +141,16 @@ export default function ConnectCalendar() {
 
   return (
     <div className="hud-signal">
-      <button className="hud-signal-toggle" onClick={handleConnect} disabled={!gisReady || status === 'connecting'}>
-        🔗 {!gisReady ? 'Loading…' : status === 'connecting' ? 'Connecting…' : 'Connect your Google Calendar'}
+      <button className="hud-signal-toggle glass" onClick={handleConnect} disabled={!gisReady || status === 'connecting'}>
+        <span className="hud-signal-icon">
+          <Link2 size={15} />
+        </span>
+        <span className="hud-signal-label">
+          {!gisReady ? 'Loading...' : status === 'connecting' ? 'Connecting...' : 'Connect your Google Calendar'}
+        </span>
       </button>
       {status === 'error' && (
-        <div className="hud-signal-details hud-signal-details--error">{errorMessage}</div>
+        <div className="hud-signal-details hud-signal-details--error glass">{errorMessage}</div>
       )}
     </div>
   )

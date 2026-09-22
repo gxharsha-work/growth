@@ -13,6 +13,9 @@ export const TEAMS = {
       sizeBucket: '6-10 engineers',
       functionType: 'Backend/Platform',
     },
+    // Suggested capabilities — seeds the village and fills the "Add" chips.
+    // Capabilities are free-form per team; these are just good starting names.
+    capabilities: ['Frontend', 'Backend', 'QA', 'DevOps'],
   },
   backend: {
     id: 'backend',
@@ -21,6 +24,7 @@ export const TEAMS = {
       sizeBucket: '6-10 engineers',
       functionType: 'Backend/Platform',
     },
+    capabilities: ['APIs', 'Data Pipelines', 'Reliability', 'Security'],
   },
   // Fed by real signals from scripts/jira-ingest.js (see mockSignals.js).
   // Fictional client engagement used to pilot the real Jira integration.
@@ -31,6 +35,7 @@ export const TEAMS = {
       sizeBucket: '1-5 engineers',
       functionType: 'Growth Marketing',
     },
+    capabilities: ['Paid Media', 'SEO & Content', 'Lifecycle & CRM', 'Analytics', 'Partnerships'],
   },
 }
 

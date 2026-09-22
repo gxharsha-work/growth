@@ -8,9 +8,9 @@ const CLOUD_COUNT = 8
 // wide sky dome) so a few are reliably inside the camera's frustum no
 // matter which way the village is orbited — a handful of distant, barely
 // visible clouds wouldn't read as a signal at all.
-const AREA = 15
-const MIN_Y = 6.5
-const MAX_Y = 8.5
+const AREA = 26
+const MIN_Y = 8
+const MAX_Y = 11
 
 // How much of the cloud pool is visible per weather tier — "a few" on
 // sunny weeks, denser and more obvious as things worsen.

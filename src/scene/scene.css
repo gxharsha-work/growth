@@ -1,0 +1,59 @@
+/* floating in-world name tags (rendered through drei <Html>) */
+.bldg-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(10px) saturate(1.4);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 18px rgba(28, 44, 84, 0.22), 0 1px 3px rgba(28, 44, 84, 0.12);
+  font-family: var(--font, system-ui, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: #16223a;
+  white-space: nowrap;
+  user-select: none;
+  transform: translateY(-4px);
+}
+
+.bldg-label-badge {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+}
+
+.bldg-label-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22a06b;
+  box-shadow: 0 0 0 3px rgba(34, 160, 107, 0.18);
+}
+
+.bldg-label--ok .bldg-label-dot {
+  background: #e8a217;
+  box-shadow: 0 0 0 3px rgba(232, 162, 23, 0.2);
+}
+
+.bldg-label--low .bldg-label-dot {
+  background: #e5484d;
+  box-shadow: 0 0 0 3px rgba(229, 72, 77, 0.2);
+}
+
+.compare-canvas-wrap .bldg-label {
+  font-size: 10.5px;
+  padding: 3px 8px 3px 3px;
+}
+
+.compare-canvas-wrap .bldg-label-badge {
+  width: 18px;
+  height: 18px;
+}

@@ -16,3 +16,19 @@ export function useToonGradient(steps = 4) {
     return texture
   }, [steps])
 }
+
+// One shared ramp for every building material (models create many small
+// materials, so a per-component texture would be wasteful).
+let sharedGradient = null
+export function getToonGradient() {
+  if (!sharedGradient) {
+    const steps = 4
+    const data = new Uint8Array(steps)
+    for (let i = 0; i < steps; i++) data[i] = Math.round(((i + 1) / steps) * 255)
+    sharedGradient = new THREE.DataTexture(data, steps, 1, THREE.RedFormat)
+    sharedGradient.minFilter = THREE.NearestFilter
+    sharedGradient.magFilter = THREE.NearestFilter
+    sharedGradient.needsUpdate = true
+  }
+  return sharedGradient
+}

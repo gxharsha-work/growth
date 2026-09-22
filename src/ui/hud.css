@@ -1,72 +1,155 @@
 .hud {
   position: absolute;
+  z-index: 10;
   top: 24px;
   right: 24px;
-  width: 240px;
+  width: 268px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-family: var(--font);
+  color: var(--ink);
 }
 
-.hud-tabs {
+/* ---------- team switcher ---------- */
+.hud-teams {
   display: flex;
-  background: #fffaf0;
-  border: 2px solid #f3e0bd;
-  border-radius: 16px;
-  padding: 4px;
-  box-shadow: 0 10px 30px rgba(120, 80, 30, 0.18);
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px;
+  border-radius: 18px;
 }
 
-.hud-tab {
-  flex: 1;
+.hud-team {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px 9px 12px;
   border: none;
+  border-radius: 13px;
   background: transparent;
-  border-radius: 12px;
-  padding: 8px 6px;
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #a4835c;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.hud-tab:hover {
-  background: #fff2da;
+.hud-team:hover {
+  background: var(--wash);
 }
 
-.hud-tab--active {
-  background: #6b4a2b;
-  color: #fffaf0;
+.hud-team--active {
+  background: var(--ink);
+  color: #fff;
 }
 
+.hud-team--active:hover {
+  background: var(--ink);
+}
+
+.hud-team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud-team-score {
+  flex: none;
+  min-width: 26px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--good);
+  background: rgba(31, 157, 104, 0.13);
+}
+
+.hud-team-score--ok {
+  color: #a86f00;
+  background: rgba(221, 154, 18, 0.16);
+}
+
+.hud-team-score--low {
+  color: var(--bad);
+  background: rgba(229, 72, 77, 0.13);
+}
+
+/* ---------- score ring ---------- */
 .hud-score {
-  background: #fffaf0;
-  border: 2px solid #f3e0bd;
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: 0 10px 30px rgba(120, 80, 30, 0.18);
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px 12px 12px;
+  --level: var(--good);
+}
+
+.hud-score--ok {
+  --level: var(--warn);
+}
+
+.hud-score--low {
+  --level: var(--bad);
+}
+
+.hud-ring {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  flex: none;
+}
+
+.hud-ring svg {
+  transform: rotate(-90deg);
+}
+
+.hud-ring circle {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.hud-ring-track {
+  stroke: var(--wash);
+}
+
+.hud-ring-value {
+  stroke: var(--level);
+  transition: stroke-dashoffset 0.7s cubic-bezier(0.3, 0.9, 0.3, 1), stroke 0.4s ease;
 }
 
 .hud-score-value {
-  font-size: 28px;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
   font-weight: 800;
-  color: #5a4128;
-  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.hud-score-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.hud-score-title {
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .hud-score-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #a4835c;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
 }
 
+/* ---------- signal pills ---------- */
 .hud-signal {
-  align-self: flex-start;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -76,49 +159,68 @@
 .hud-signal-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: #eaf4fb;
-  border: 2px solid #b9dcf0;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #2f6690;
-  box-shadow: 0 6px 18px rgba(40, 100, 150, 0.15);
+  gap: 9px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.hud-signal-toggle:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.hud-signal-toggle:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .hud-signal-icon {
-  font-size: 13px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
-.hud-signal-caret {
-  font-size: 9px;
-  margin-left: 2px;
+.hud-signal-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.hud-signal-toggle > svg {
+  flex: none;
+  color: var(--ink-3);
 }
 
 .hud-signal-details {
-  background: #fffaf0;
-  border: 2px solid #f3e0bd;
-  border-radius: 12px;
-  padding: 8px 10px;
-  font-size: 11px;
-  color: #5a4128;
-  max-height: 220px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-height: 240px;
   overflow-y: auto;
 }
 
 .hud-signal--muted {
-  font-size: 10.5px;
-  color: #a4835c;
-  background: #fffaf0;
-  border: 2px dashed #f3e0bd;
-  border-radius: 12px;
-  padding: 8px 10px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-3);
 }
 
 .hud-signal-details--error {
-  color: #a13d31;
+  color: var(--bad);
   word-break: break-word;
 }
 
@@ -127,41 +229,50 @@
   padding-left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
-.hud-compare-toggle {
-  background: #fffaf0;
-  border: 2px solid #f3e0bd;
-  border-radius: 16px;
-  padding: 10px 14px;
-  font-size: 12.5px;
+.hud-detail-list strong {
+  color: var(--ink);
+}
+
+.hud-detail-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  color: var(--good);
   font-weight: 700;
-  color: #6b4a2b;
+}
+
+/* ---------- compare toggle ---------- */
+.hud-compare-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 16px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(120, 80, 30, 0.18);
-  transition: transform 0.12s ease, border-color 0.12s ease;
+  transition: transform 0.15s ease;
 }
 
 .hud-compare-toggle:hover {
-  transform: translateY(-2px);
-  border-color: #d9b36c;
+  transform: translateY(-1px);
 }
 
-.hud-compare-toggle:active {
-  transform: translateY(0);
-}
-
-/* grid-rows 0fr -> 1fr is what lets this collapse/expand smoothly without
-   knowing the content's height up front — the banner eases in and out as
-   the user scrubs across the early-warning boundary instead of popping */
+/* grid-rows 0fr -> 1fr collapses/expands smoothly without knowing the
+   content height, so the banner eases in and out as the user scrubs across
+   the early-warning boundary instead of popping */
 .hud-warning-wrap {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
   transform: translateY(-4px);
-  transition: grid-template-rows 0.45s ease, opacity 0.4s ease,
-    transform 0.45s ease;
+  transition: grid-template-rows 0.45s ease, opacity 0.4s ease, transform 0.45s ease;
 }
 
 .hud-warning-wrap--visible {
@@ -173,33 +284,39 @@
 .hud-warning {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   min-height: 0;
   overflow: hidden;
-  background: #fdeceb;
-  border: 2px solid #f3b0a8;
+  padding: 11px 13px;
   border-radius: 16px;
-  padding: 10px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #a13d31;
-  box-shadow: 0 10px 30px rgba(160, 50, 30, 0.15);
+  background: rgba(255, 240, 239, 0.92);
+  border: 1px solid rgba(229, 72, 77, 0.28);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #a13036;
+  box-shadow: 0 14px 34px -14px rgba(229, 72, 77, 0.45);
+}
+
+.hud-warning svg {
+  flex: none;
 }
 
 .hud-warning-wrap--visible .hud-warning {
   animation: hud-warning-pulse 2.2s ease-in-out infinite;
 }
 
-.hud-warning-icon {
-  font-size: 15px;
-}
-
 @keyframes hud-warning-pulse {
   0%,
   100% {
-    box-shadow: 0 10px 30px rgba(160, 50, 30, 0.15);
+    box-shadow: 0 14px 34px -14px rgba(229, 72, 77, 0.35);
   }
   50% {
-    box-shadow: 0 10px 30px rgba(160, 50, 30, 0.35);
+    box-shadow: 0 14px 34px -10px rgba(229, 72, 77, 0.65);
+  }
+}
+
+@media (max-width: 820px) {
+  .hud {
+    width: 232px;
   }
 }

@@ -1,4 +1,5 @@
 import { Canvas } from '@react-three/fiber'
+import { TriangleAlert } from 'lucide-react'
 import * as THREE from 'three'
 import { TEAM_IDS, TEAMS } from '../data/roster'
 import { useAppStore } from '../store/appStore'
@@ -17,7 +18,7 @@ export default function CompareView() {
       {TEAM_IDS.map((teamId) => {
         const weekHealth = getTeamWeek(teamId, currentWeek)
         return (
-          <div className="compare-card" key={teamId}>
+          <div className="compare-card glass" key={teamId}>
             <div className="compare-card-header">
               <span className="compare-team-name">{TEAMS[teamId].name}</span>
               <span className="compare-score">{weekHealth?.score ?? '–'}</span>
@@ -28,7 +29,8 @@ export default function CompareView() {
               }`}
             >
               <div className="compare-warning">
-                ⚠️ Early warning: rising cycle time and workload
+                <TriangleAlert size={14} />
+                Early warning: rising cycle time and workload
               </div>
             </div>
             <div className="compare-canvas-wrap">

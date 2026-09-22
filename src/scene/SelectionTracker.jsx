@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { useVillageStore } from '../store/villageStore'
+import { COMMONS_ID, useVillageStore } from '../store/villageStore'
 import { tileCenter } from './gridUtils'
 
 // Projects the selected building's 3D position into CSS pixel coordinates
@@ -29,13 +29,18 @@ export default function SelectionTracker({ teamId }) {
       lastSent.current = { x: -1, y: -1 }
     }
 
-    const building = Object.values(state.buildingsByTeam[teamId] ?? {}).find(
-      (b) => b.id === selectedId
-    )
-    if (!building) return
-
-    const [x, z] = tileCenter(building.col, building.row)
-    vector.current.set(x, 0.9, z)
+    let x = 0
+    let z = 0
+    let y = 2.6
+    if (selectedId !== COMMONS_ID) {
+      const building = Object.values(state.buildingsByTeam[teamId] ?? {}).find(
+        (b) => b.id === selectedId
+      )
+      if (!building) return
+      ;[x, z] = tileCenter(building.col, building.row)
+      y = 2.9
+    }
+    vector.current.set(x, y, z)
     vector.current.project(camera)
 
     const screenX = ((vector.current.x + 1) / 2) * size.width
