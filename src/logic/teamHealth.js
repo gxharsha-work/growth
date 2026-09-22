@@ -3,7 +3,7 @@
 // should read from here rather than calling healthScore.js directly, so the
 // scoring math and the data shape stay decoupled from components.
 
-import { WEEKLY_SIGNALS } from '../data/mockSignals'
+import { getWeeklySignalsForTeam } from '../data/mockSignals'
 import {
   computeHealthScore,
   computeCapabilityScore,
@@ -29,7 +29,7 @@ const cache = new Map()
 export function getTeamWeeklyHealth(teamId) {
   if (cache.has(teamId)) return cache.get(teamId)
 
-  const weeks = WEEKLY_SIGNALS[teamId] ?? []
+  const weeks = getWeeklySignalsForTeam(teamId)
   const scores = weeks.map(computeHealthScore)
   const capabilityScores = weeks.map(computeCapabilityScore)
 

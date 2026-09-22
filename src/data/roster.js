@@ -1,43 +1,8 @@
-// Static roster + peer cohort data — stand-in for a future HRIS integration (FR4)
-// and peer-group tagging (FR8). All names are fictional placeholders.
-
-export const TEAM_IDS = ['platform', 'backend', 'solstice']
-
-export const TEAMS = {
-  platform: {
-    id: 'platform',
-    name: 'Platform Team',
-    // FR8: peer cohort tags — teams sharing these are considered a valid
-    // peer-comparison pair (same headcount bucket, same function type).
-    cohort: {
-      sizeBucket: '6-10 engineers',
-      functionType: 'Backend/Platform',
-    },
-    // Suggested capabilities — seeds the village and fills the "Add" chips.
-    // Capabilities are free-form per team; these are just good starting names.
-    capabilities: ['Frontend', 'Backend', 'QA', 'DevOps'],
-  },
-  backend: {
-    id: 'backend',
-    name: 'Backend Team',
-    cohort: {
-      sizeBucket: '6-10 engineers',
-      functionType: 'Backend/Platform',
-    },
-    capabilities: ['APIs', 'Data Pipelines', 'Reliability', 'Security'],
-  },
-  // Fed by real signals from scripts/jira-ingest.js (see mockSignals.js).
-  // Fictional client engagement used to pilot the real Jira integration.
-  solstice: {
-    id: 'solstice',
-    name: 'Growth (Solstice Outdoors)',
-    cohort: {
-      sizeBucket: '1-5 engineers',
-      functionType: 'Growth Marketing',
-    },
-    capabilities: ['Paid Media', 'SEO & Content', 'Lifecycle & CRM', 'Analytics', 'Partnerships'],
-  },
-}
+// Static roster data — stand-in for a future HRIS integration (FR4). All
+// names are fictional placeholders. The team list itself (id, name, cohort,
+// capabilities) now lives in src/store/teamsStore.js so it can be created/
+// renamed/deleted at runtime — ROSTERS (member lists) is out of scope for
+// that and stays static here, keyed by the same team ids.
 
 export const ROSTERS = {
   platform: [

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Trash2, Sprout, MousePointerClick, Sparkles, Hand } from 'lucide-react'
 import { ARCHETYPES, ARCHETYPE_IDS, GENERIC_SUGGESTIONS, guessArchetype } from '../data/archetypes'
-import { TEAMS } from '../data/roster'
 import { COMMONS_ID, countArchetypes, useVillageStore } from '../store/villageStore'
 import { useAppStore } from '../store/appStore'
+import { useTeamsStore } from '../store/teamsStore'
 import { getTeamWeek } from '../logic/teamHealth'
 import { getCapabilityStatus, getCommonsStatus } from '../logic/buildingStatus'
 import ArchetypeGlyph from './ArchetypeGlyph'
@@ -30,7 +30,7 @@ export default function Panel() {
   const [confirmId, setConfirmId] = useState(null)
   const inputRef = useRef(null)
 
-  const team = TEAMS[currentTeam]
+  const team = useTeamsStore((s) => s.teams[currentTeam])
   const weekHealth = getTeamWeek(currentTeam, currentWeek)
   const capStatus = getCapabilityStatus(weekHealth)
   const commonsStatus = getCommonsStatus(weekHealth)

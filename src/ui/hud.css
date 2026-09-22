@@ -20,11 +20,19 @@
   border-radius: 18px;
 }
 
+.hud-team-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .hud-team {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
   padding: 9px 10px 9px 12px;
   border: none;
   border-radius: 13px;
@@ -76,6 +84,178 @@
 .hud-team-score--low {
   color: var(--bad);
   background: rgba(229, 72, 77, 0.13);
+}
+
+.hud-team--checked {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.hud-team--checked:hover {
+  background: var(--accent-soft);
+}
+
+.hud-team--capped {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---------- team row actions (edit/delete) ---------- */
+.hud-team-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.hud-team-row:hover .hud-team-actions,
+.hud-team-actions:focus-within {
+  opacity: 1;
+}
+
+.hud-team-edit,
+.hud-team-remove {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  border: none;
+  border-radius: 10px;
+  padding: 6px;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 700;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.hud-team-edit:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.hud-team-remove:hover {
+  background: rgba(229, 72, 77, 0.12);
+  color: var(--bad);
+}
+
+.hud-team-remove--confirm {
+  opacity: 1;
+  background: var(--bad);
+  color: #fff;
+  padding: 6px 9px;
+}
+
+.hud-team-remove--confirm:hover {
+  background: var(--bad);
+  color: #fff;
+}
+
+/* ---------- team add + composer ---------- */
+.hud-team-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.hud-team-add:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.hud-team-add--open svg {
+  transform: rotate(45deg);
+}
+
+.hud-team-add svg {
+  transition: transform 0.15s ease;
+}
+
+.hud-team-composer-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.32s cubic-bezier(0.3, 0.9, 0.3, 1), opacity 0.25s ease,
+    margin 0.32s ease;
+}
+
+.hud-team-composer-wrap--open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 4px;
+}
+
+.hud-team-composer-wrap > .hud-team-composer {
+  overflow: hidden;
+}
+
+.hud-team-composer-wrap--open > .hud-team-composer {
+  overflow: visible;
+}
+
+.hud-team-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+}
+
+.hud-team-field {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.hud-team-field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.hud-team-composer-go {
+  padding: 8px 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent-grad);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hud-team-composer-go:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+/* ---------- compare picker ---------- */
+.hud-compare-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-3);
 }
 
 /* ---------- score ring ---------- */

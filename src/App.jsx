@@ -7,6 +7,7 @@ import TeamHUD from './ui/TeamHUD'
 import Timeline from './ui/Timeline'
 import CompareView from './ui/CompareView'
 import BuildingDetailsPopup from './ui/BuildingDetailsPopup'
+import EmptyVillageState from './ui/EmptyVillageState'
 import { useVillageStore } from './store/villageStore'
 import { useAppStore } from './store/appStore'
 import { getTeamWeek } from './logic/teamHealth'
@@ -19,8 +20,10 @@ export default function App() {
   const currentTeam = useAppStore((s) => s.currentTeam)
   const currentWeek = useAppStore((s) => s.currentWeek)
   const viewMode = useAppStore((s) => s.viewMode)
+  const openTeamComposer = useAppStore((s) => s.openTeamComposer)
 
-  const weekHealth = getTeamWeek(currentTeam, currentWeek)
+  const hasTeam = currentTeam != null
+  const weekHealth = hasTeam ? getTeamWeek(currentTeam, currentWeek) : null
 
   // Esc backs out of placing mode
   useEffect(() => {
@@ -53,7 +56,7 @@ export default function App() {
     <div className="app-root">
       {isCompare ? (
         <CompareView />
-      ) : (
+      ) : hasTeam ? (
         <>
           <Canvas
             className="app-canvas"
@@ -66,6 +69,8 @@ export default function App() {
           <Panel />
           <BuildingDetailsPopup />
         </>
+      ) : (
+        <EmptyVillageState onCreate={openTeamComposer} />
       )}
       <TeamHUD />
       <Timeline />

@@ -11,3 +11,55 @@
   touch-action: none;
   cursor: grab;
 }
+
+.empty-village {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.empty-village-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 280px;
+  padding: 32px 28px;
+  text-align: center;
+  color: var(--ink);
+}
+
+.empty-village-card svg {
+  color: var(--accent);
+}
+
+.empty-village-card strong {
+  font-size: 16px;
+}
+
+.empty-village-card span {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.empty-village-cta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 14px;
+  background: var(--accent-grad);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.empty-village-cta:hover {
+  transform: translateY(-1px);
+}

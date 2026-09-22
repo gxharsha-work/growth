@@ -4,6 +4,7 @@
 // until that ingestion step lands.
 import liveJiraWeeks from './jiraSignals.generated.json'
 import liveCalendarWeeks from './calendarSignals.generated.json'
+import { generateWeeklyRows } from './generatedSignals'
 
 // Mock signal data for two teams across 8 consecutive weeks.
 //
@@ -96,8 +97,28 @@ const liveTeams = Object.fromEntries(
   })
 )
 
-export const WEEKLY_SIGNALS = {
+export const HAND_TUNED_IDS = new Set(['platform', 'backend'])
+const HAND_TUNED = {
   platform: buildWeeks(PLATFORM_ROWS),
   backend: buildWeeks(BACKEND_ROWS),
-  ...liveTeams,
+}
+
+// Where a team's signals come from: hand-tuned demo narrative, real ingested
+// data, or (for any team without either) a deterministic generated fallback.
+export function getSignalSource(teamId) {
+  if (HAND_TUNED_IDS.has(teamId)) return 'hand-tuned'
+  if (liveTeams[teamId]) return 'live'
+  return 'generated'
+}
+
+// Replaces the old static WEEKLY_SIGNALS object: WEEKLY_SIGNALS was built
+// once at module load, but a team created at runtime needs signals the
+// moment teamHealth.js first asks for it. This is a pure function of
+// teamId instead, so teamHealth.js's never-invalidated per-teamId cache
+// stays safe without needing any invalidation logic.
+export function getWeeklySignalsForTeam(teamId) {
+  if (!teamId) return []
+  if (HAND_TUNED[teamId]) return HAND_TUNED[teamId]
+  if (liveTeams[teamId]) return liveTeams[teamId]
+  return buildWeeks(generateWeeklyRows(teamId))
 }

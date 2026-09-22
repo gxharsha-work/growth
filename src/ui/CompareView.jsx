@@ -1,26 +1,30 @@
 import { Canvas } from '@react-three/fiber'
 import { TriangleAlert } from 'lucide-react'
 import * as THREE from 'three'
-import { TEAM_IDS, TEAMS } from '../data/roster'
 import { useAppStore } from '../store/appStore'
+import { useTeamsStore } from '../store/teamsStore'
 import { getTeamWeek } from '../logic/teamHealth'
 import Scene from '../scene/Scene'
 import './compareView.css'
 
-// FR8, lightweight: both teams' villages rendered side by side at the same
-// week, each labeled with its current score, so a viewer can compare
-// "healthy" vs. "struggling" in one glance. Read-only — no placement/drag.
+// Lightweight team comparison: the teams picked in appStore.compareTeamIds
+// (2-4 of them) rendered side by side at the same week, each labeled with
+// its current score. Read-only — no placement/drag.
 export default function CompareView() {
   const currentWeek = useAppStore((s) => s.currentWeek)
+  const compareTeamIds = useAppStore((s) => s.compareTeamIds)
+  const teams = useTeamsStore((s) => s.teams)
 
   return (
     <div className="compare-view">
-      {TEAM_IDS.map((teamId) => {
+      {compareTeamIds.map((teamId) => {
+        const team = teams[teamId]
+        if (!team) return null // defensive: appStore.deleteTeam already prunes this
         const weekHealth = getTeamWeek(teamId, currentWeek)
         return (
           <div className="compare-card glass" key={teamId}>
             <div className="compare-card-header">
-              <span className="compare-team-name">{TEAMS[teamId].name}</span>
+              <span className="compare-team-name">{team.name}</span>
               <span className="compare-score">{weekHealth?.score ?? '–'}</span>
             </div>
             <div

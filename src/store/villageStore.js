@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { TEAM_IDS, TEAMS } from '../data/roster'
+import { useTeamsStore } from './teamsStore'
 import { guessArchetype } from '../data/archetypes'
 
 export const GRID_SIZE = 8
@@ -85,10 +85,13 @@ function makeEntry({ name, archetype, col, row, justPlaced = false }) {
 }
 
 // Every team starts with its suggested capabilities already on the island,
-// so nobody stares at an empty world on first load.
-function defaultLayout(teamId) {
+// so nobody stares at an empty world on first load. Takes a capabilities
+// array directly (not a teamId) so it works the same for the static seed
+// teams and for a team created at runtime, which won't exist in any static
+// lookup table.
+function defaultLayout(capabilities = []) {
   const layout = {}
-  for (const name of TEAMS[teamId]?.capabilities ?? []) {
+  for (const name of capabilities) {
     const spot = pickAutoTile(layout)
     if (!spot) break
     const archetype = guessArchetype(name, countArchetypes(layout))
@@ -98,7 +101,8 @@ function defaultLayout(teamId) {
 }
 
 function defaultBuildingsByTeam() {
-  return Object.fromEntries(TEAM_IDS.map((id) => [id, defaultLayout(id)]))
+  const teams = useTeamsStore.getState().teams
+  return Object.fromEntries(Object.values(teams).map((t) => [t.id, defaultLayout(t.capabilities)]))
 }
 
 export const useVillageStore = create((set, get) => ({
@@ -195,6 +199,26 @@ export const useVillageStore = create((set, get) => ({
         selectedScreenPos: state.selectedId === id ? null : state.selectedScreenPos,
         highlightedId: state.highlightedId === id ? null : state.highlightedId,
       }
+    }),
+
+  // Called when a new team is created (appStore.createTeam) — seeds its
+  // island the same way the initial seed teams get one, using whatever
+  // capabilities it starts with (usually none yet).
+  ensureTeamLayout: (teamId, capabilities) =>
+    set((state) =>
+      state.buildingsByTeam[teamId]
+        ? {}
+        : { buildingsByTeam: { ...state.buildingsByTeam, [teamId]: defaultLayout(capabilities) } }
+    ),
+
+  // Called when a team is deleted (appStore.deleteTeam) — drops its layout
+  // entirely; nothing else references buildingsByTeam by a stale teamId.
+  deleteTeamLayout: (teamId) =>
+    set((state) => {
+      if (!(teamId in state.buildingsByTeam)) return {}
+      const next = { ...state.buildingsByTeam }
+      delete next[teamId]
+      return { buildingsByTeam: next }
     }),
 
   flashBlocked: (col, row) => {
