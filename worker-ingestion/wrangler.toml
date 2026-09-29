@@ -22,11 +22,11 @@ crons = ["0 13 * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "growth-db"
-database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+database_id = "ce889c2f-cd60-4182-83a2-7bac95d5289c"
 
 [vars]
 PILOT_TEAM_ID = "solstice"
 JIRA_SITE_URL = "https://growth3d.atlassian.net"
-JIRA_EMAIL = "REPLACE_WITH_JIRA_EMAIL"
+JIRA_EMAIL = "harshavg@andrew.cmu.edu"
 JIRA_BOARD_ID = "1"
-GOOGLE_CALENDAR_CLIENT_ID = "REPLACE_WITH_DESKTOP_OAUTH_CLIENT_ID"
+GOOGLE_CALENDAR_CLIENT_ID = "107182987367-2qe673pnt7ugu0imv4fau28ieckc2hbv.apps.googleusercontent.com"

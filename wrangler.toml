@@ -13,4 +13,4 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "growth-db"
-database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+database_id = "ce889c2f-cd60-4182-83a2-7bac95d5289c"
