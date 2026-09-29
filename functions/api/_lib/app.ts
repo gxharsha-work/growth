@@ -11,8 +11,9 @@
 
 import { Hono } from 'hono'
 import { getSignalsForTeam } from './signals'
+import { generateCoachingNote, type CoachingEvidence } from './coaching'
 
-type Env = { DB: D1Database }
+type Env = { DB: D1Database; AI: Ai }
 
 type TeamRow = {
   id: string
@@ -193,6 +194,25 @@ app.get('/teams/:id/signals', async (c) => {
   const teamId = c.req.param('id')
   const { weeks, source } = await getSignalsForTeam(c.env.DB, teamId)
   return c.json({ weeks, source })
+})
+
+// ---------- AI coaching (Sprint 3's stage 5 — see _lib/coaching.ts) ----------
+
+app.post('/insight', async (c) => {
+  const evidence = await c.req.json<CoachingEvidence>()
+  if (!evidence?.team?.name || typeof evidence.score !== 'number') {
+    return c.json({ error: 'invalid evidence payload' }, 400)
+  }
+  try {
+    const text = await generateCoachingNote(c.env.AI, evidence)
+    return c.json({ text })
+  } catch (err) {
+    // The AI layer is an enhancement, never a dependency (Sprint 3/4's own
+    // framing) — a failure here is reported as a normal error response, not
+    // a 500 that could be mistaken for the app itself being broken. The
+    // frontend shows the score/signals with no narrative when this happens.
+    return c.json({ error: (err as Error).message }, 502)
+  }
 })
 
 export default app

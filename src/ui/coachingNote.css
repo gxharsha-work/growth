@@ -1,0 +1,79 @@
+.coaching-note {
+  display: flex;
+  flex-direction: column;
+}
+
+.coaching-note-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 14px;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.coaching-note-trigger:hover {
+  transform: translateY(-1px);
+}
+
+.coaching-note-trigger svg {
+  color: var(--accent);
+  flex: none;
+}
+
+.coaching-note-trigger--warning svg {
+  color: var(--bad);
+}
+
+.coaching-note-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.coaching-note-card p {
+  margin: 0;
+  color: var(--ink);
+}
+
+.coaching-note-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.coaching-note-card--loading {
+  flex-direction: row;
+  align-items: center;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.coaching-note-spin {
+  animation: coaching-note-spin 1.4s linear infinite;
+}
+
+@keyframes coaching-note-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.coaching-note-card--error {
+  color: var(--bad);
+}

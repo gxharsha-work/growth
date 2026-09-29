@@ -14,3 +14,9 @@ pages_build_output_dir = "dist"
 binding = "DB"
 database_name = "growth-db"
 database_id = "ce889c2f-cd60-4182-83a2-7bac95d5289c"
+
+# Workers AI (free tier, no billing needed on the Workers Free plan) — runs
+# the AI coaching suggestion (Sprint 3's stage 5, "AI Coaching") server-side
+# in functions/api/_lib/app.ts's POST /api/insight. See EVALUATION.md.
+[ai]
+binding = "AI"

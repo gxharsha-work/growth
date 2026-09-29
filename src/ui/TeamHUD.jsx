@@ -17,6 +17,7 @@ import { getTeamWeek } from '../logic/teamHealth'
 import { levelFor } from '../logic/buildingStatus'
 import { SignalPill, JiraDetailsList, CalendarDetailsList } from './SignalPill'
 import ConnectCalendar from './ConnectCalendar'
+import CoachingNote from './CoachingNote'
 import './hud.css'
 
 const RING_RADIUS = 24
@@ -304,6 +305,10 @@ export default function TeamHUD() {
           expanded={expandedSignal === 'calendar'}
           onToggle={() => toggleSignal('calendar')}
         />
+      )}
+
+      {!isCompare && weekHealth && (
+        <CoachingNote teamId={currentTeam} currentWeek={currentWeek} weekHealth={weekHealth} />
       )}
 
       {!isCompare && <ConnectCalendar />}
