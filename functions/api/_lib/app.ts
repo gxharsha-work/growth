@@ -11,7 +11,7 @@
 
 import { Hono } from 'hono'
 import { getSignalsForTeam } from './signals'
-import { generateCoachingNote, type CoachingEvidence } from './coaching'
+import { generateCoachingNote, buildPrompt, type CoachingEvidence } from './coaching'
 
 type Env = { DB: D1Database; AI: Ai }
 
@@ -212,6 +212,37 @@ app.post('/insight', async (c) => {
     // a 500 that could be mistaken for the app itself being broken. The
     // frontend shows the score/signals with no narrative when this happens.
     return c.json({ error: (err as Error).message }, 502)
+  }
+})
+
+// ---------- eval harness support (scripts/evaluate-coaching.mjs) ----------
+//
+// Dev/eval tool, not a product surface: lets the harness run an arbitrary
+// system prompt against an arbitrary Workers AI model, reusing the SAME
+// evidence formatting (buildPrompt) the production /insight endpoint uses,
+// so config comparisons (old prompt vs. current prompt vs. a bigger model)
+// are testing the same input text end to end. Returns raw, unparsed text —
+// the harness does its own parsing/scoring across all configs uniformly,
+// including configs never designed to produce the STATUS/SIGNAL/ACTION
+// shape (that's an intentional part of what's being measured).
+app.post('/eval/insight', async (c) => {
+  const body = await c.req.json<{ model: string; systemPrompt: string; evidence: CoachingEvidence; maxTokens?: number }>()
+  if (!body?.model || !body?.systemPrompt || !body?.evidence) {
+    return c.json({ error: 'model, systemPrompt, and evidence are required' }, 400)
+  }
+  const start = Date.now()
+  try {
+    const result = await c.env.AI.run(body.model, {
+      messages: [
+        { role: 'system', content: body.systemPrompt },
+        { role: 'user', content: buildPrompt(body.evidence) },
+      ],
+      max_tokens: body.maxTokens ?? 220,
+    })
+    const raw = (result as { response?: string }).response ?? ''
+    return c.json({ raw, latencyMs: Date.now() - start })
+  } catch (err) {
+    return c.json({ error: (err as Error).message, latencyMs: Date.now() - start }, 502)
   }
 })
 

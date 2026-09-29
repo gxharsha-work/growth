@@ -41,24 +41,59 @@ export type CoachingEvidence = {
 
 export type CoachingNote = { status: string; signal: string; action: string }
 
-function buildPrompt(ev: CoachingEvidence): string {
+// Exported for eval/'s harness (functions/api/_lib/app.ts's POST
+// /api/eval/insight, driven by scripts/evaluate-coaching.mjs) — evaluation
+// tests other prompt/model combinations against the SAME evidence-to-text
+// formatting the production path uses, rather than a hand-copied duplicate
+// that could quietly drift from what buildPrompt actually does.
+// Formats one signal line, or omits it entirely when the value is missing —
+// per Sprint 3's own requirement ("Missing or unavailable signals should
+// reduce the set of indicators used rather than prevent the system from
+// functioning"), which this used to violate: a genuinely missing signal
+// (e.g. calendar data not yet synced for a brand-new integration) crashed
+// this function outright (`undefined.toFixed is not a function`) before
+// the evaluation harness's "calendar unavailable" edge case surfaced it.
+function signalLine(label: string, value: number | undefined, format: (v: number) => string): string | null {
+  if (value === undefined || value === null || Number.isNaN(value)) return null
+  return `- ${label}: ${format(value)}`
+}
+
+export function buildPrompt(ev: CoachingEvidence): string {
   const trendWord = ev.trend > 2 ? 'improving' : ev.trend < -2 ? 'declining' : 'holding steady'
+  const signalLines = [
+    signalLine('Jira cycle time', ev.signals.avgCycleTimeDays, (v) => `${v.toFixed(1)} days`),
+    signalLine('Sprint completion', ev.signals.sprintCompletionPct, (v) => `${v}%`),
+    signalLine('Code review turnaround', ev.signals.avgReviewTurnaroundHours, (v) => `${v.toFixed(1)} hours`),
+    signalLine('Commits after 7pm', ev.signals.pctCommitsAfter7pm, (v) => `${v}%`),
+    signalLine('Meeting load', ev.signals.avgMeetingHoursPerWeek, (v) => `${v.toFixed(1)} hours/week`),
+  ].filter((line): line is string => line !== null)
+
   const lines = [
     `Team: ${ev.team.name} (${ev.team.cohort.sizeBucket}, ${ev.team.cohort.functionType})`,
     `Week ${ev.week} composite health score: ${ev.score}/100, ${trendWord} vs last week.`,
     `Early-warning state: ${ev.earlyWarning ? 'TRIGGERED — score dropped meaningfully below this team\'s own trailing baseline' : 'not triggered'}.`,
     `Signals this week:`,
-    `- Jira cycle time: ${ev.signals.avgCycleTimeDays.toFixed(1)} days`,
-    `- Sprint completion: ${ev.signals.sprintCompletionPct}%`,
-    `- Code review turnaround: ${ev.signals.avgReviewTurnaroundHours.toFixed(1)} hours`,
-    `- Commits after 7pm: ${ev.signals.pctCommitsAfter7pm}%`,
-    `- Meeting load: ${ev.signals.avgMeetingHoursPerWeek.toFixed(1)} hours/week`,
+    ...signalLines,
   ]
+  if (signalLines.length < 5) {
+    lines.push(`(Some signals were unavailable this week and are omitted above — reason only that fewer than five listed.)`)
+  }
+
   if (ev.peer) {
+    const peerParts = [
+      `score ${ev.peer.score}/100`,
+      signalLine('cycle time', ev.peer.signals.avgCycleTimeDays, (v) => `${v.toFixed(1)}d`),
+      signalLine('sprint completion', ev.peer.signals.sprintCompletionPct, (v) => `${v}%`),
+      signalLine('review turnaround', ev.peer.signals.avgReviewTurnaroundHours, (v) => `${v.toFixed(1)}h`),
+      signalLine('meeting load', ev.peer.signals.avgMeetingHoursPerWeek, (v) => `${v.toFixed(1)}h/week`),
+    ]
+      .filter((p): p is string => p !== null)
+      .map((p) => p.replace(/^- /, ''))
+      .join(', ')
     lines.push(
       '',
       `Anonymized peer comparison (a team in the same size/function cohort, this week):`,
-      `- ${ev.peer.name.replace(/team/i, 'Peer Team')}: score ${ev.peer.score}/100, cycle time ${ev.peer.signals.avgCycleTimeDays.toFixed(1)}d, sprint completion ${ev.peer.signals.sprintCompletionPct}%, review turnaround ${ev.peer.signals.avgReviewTurnaroundHours.toFixed(1)}h, meeting load ${ev.peer.signals.avgMeetingHoursPerWeek.toFixed(1)}h/week`
+      `- ${ev.peer.name.replace(/team/i, 'Peer Team')}: ${peerParts}`
     )
   }
   return lines.join('\n')

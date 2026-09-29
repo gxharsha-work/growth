@@ -18,7 +18,7 @@ Sprint 3/4 designed a five-stage pipeline — *data ingestion → health scoring
 | Requirement | Weight | Where it's demonstrated |
 |---|---|---|
 | Core Technology Implementation | 50% | [§1](#1-core-technology-implementation-50) — live feature, architecture, screenshots |
-| Evaluation and Baseline Comparison | 30% | [§2](#2-evaluation-and-baseline-comparison-30) — reproduced baseline, scored examples |
+| Evaluation and Baseline Comparison | 30% | [§2](#2-evaluation-and-baseline-comparison-30) — 255-run harness across 3 configs, reproduced baseline |
 | Technical Analysis | 20% | [§3](#3-technical-analysis-20) — real failure modes, an actual incident, what's next |
 
 ---
@@ -135,18 +135,18 @@ The scoring math itself (`src/logic/healthScore.js`) is unchanged from earlier s
 
 ### 2.1 Methodology
 
-`scripts/evaluate-coaching.mjs` is a reproducible evaluation harness:
+`scripts/evaluate-coaching.mjs` is a full, reproducible evaluation harness — not two hand-picked examples. It runs **255 test cases**:
 
-1. Pulls the live signal data for Platform Team and Backend Team from the deployed API.
-2. Recomputes the composite score for every week using the **unchanged deterministic baseline** (`healthScore.js`) — this *is* the Assignment 3 baseline, run live against the current production data, not a stale copy.
-3. Runs the AI coaching layer on two deliberately chosen cases: Backend Team's most severe early-warning week (the documented decline scenario from Sprint 3), and Platform Team's healthy week (a control, to test whether the model manufactures false concern where none exists).
-4. Scores both outputs against the **three criteria our own Sprint 3 doc committed to**: *risk detection, interpretability, usefulness.*
+1. Pulls the live signal data for Platform Team and Backend Team from the deployed API, and recomputes the composite score for every week using the **unchanged deterministic baseline** (`healthScore.js`) — this *is* the Assignment 3 baseline, run live against current production data.
+2. Builds all **16 real team-weeks** (Platform + Backend, weeks 1-8) as test cases, each run **5 times** to measure run-to-run consistency, plus **5 constructed edge cases** (missing calendar signal, a flat/stable team, a team recovering after an early warning, a team with no same-cohort peer, and Solstice's real live data).
+3. Runs all 21 cases through **three configurations**: (A) a deterministic rule-based template with no LLM at all, as a floor/control; (B) the *original* coaching prompt this project shipped with; (C) the *current, tightened* prompt live in production today.
+4. Automatically computes 9 metrics per output (status agreement, false-alarm rate, miss rate, number grounding, comparison-direction accuracy, driver match, 5-run consistency, format validity, latency) and exports all 255 rows to `eval/results.csv`, with two blank columns for two people to hand-score actionability 1-5 — the one judgment call a script shouldn't make unilaterally.
 
-There is no labeled ground truth for "correct coaching text" — our Sprint 3 doc names this as an open problem industry-wide, not something this sprint could solve. Evaluation is therefore qualitative and example-driven, exactly as Sprint 3 scoped it: *"Compare AI-generated explanations and coaching suggestions with the baseline outputs to determine whether they provide additional context or actionable value."*
+Full methodology, every metric definition, and the complete results table live in [`EVALUATION.md`](./EVALUATION.md); this section summarizes the headline findings.
 
 Reproduce this report's numbers yourself:
 ```
-node scripts/evaluate-coaching.mjs
+node scripts/evaluate-coaching.mjs --configs=A,B,C
 ```
 
 ### 2.2 Reproduced baseline (Assignment 3, live)
@@ -164,48 +164,63 @@ node scripts/evaluate-coaching.mjs
 
 Platform Team trends healthy and improving throughout; Backend Team's decline is caught by the deterministic early-warning threshold starting week 5 — this is the baseline the AI layer is evaluated against, not replacing it.
 
-### 2.3 Case 1 — Backend Team, week 8 (Early Warning, score 15)
+### 2.3 Results
 
-**AI output:**
-> **Status:** Worth investigating
-> **Signal:** Cycle time is 2.5x longer than peer team's 2.5 days
-> **Next step:** Investigate and discuss root cause of Backend Team's increased cycle time.
+| Config | N | Status Agreement | False-Alarm Rate | Miss Rate | Number Grounding | Comparison Direction | Driver Match | 5-Run Consistency | Format Validity | p50 Latency | Errors |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **A** — Rule-based template | 85 | 100% | 0% | 0% | 100% | n/a | 100% | 100% | 100% | ~0ms | 0 |
+| **B** — Original prompt | 85 | 25% | **100%** | 0% | 55% | 67% | 67% | 100% | **0%** | 6,689ms | 1 |
+| **C** — Current prompt | 85 | 27% | **97%** | 0% | 67% | 74% | 33% | 98% | **99%** | 2,731ms | 1 |
 
-| Criterion | Assessment |
-|---|---|
-| **Risk detection** | ✅ Correctly flags concern and identifies the dominant signal (cycle time) the deterministic scorer also weights most heavily. |
-| **Interpretability** | ✅ One glance tells a manager *what* and roughly *why* — no need to read five raw numbers. |
-| **Usefulness** | ✅ Names a concrete, specific next step rather than a generic platitude — this is the actual value-add over the raw dashboard. |
+### 2.4 The headline finding: the STATUS line carries almost no signal
 
-### 2.4 Case 2 — Platform Team, week 8 (Healthy, score 91) — a genuine failure case
+Broken down precisely across all 80 real-team-week runs per config (60 genuinely healthy weeks, 20 genuinely early-warning):
 
-**AI output (one run):**
-> **Status:** Worth investigating
-> **Signal:** Higher meeting load (4.8h) compared to peer team (17.5h)
+| | Healthy weeks flagged as concern | Early-warning weeks flagged as concern |
+|---|---|---|
+| **B** (original prompt) | **60 / 60 — 100%** | 20 / 20 — 100% |
+| **C** (current prompt) | **58 / 60 — 97%** | 20 / 20 — 100% |
 
-We report this one plainly because it's a real, reproducible limitation, not a hypothetical:
+**Both configurations flag concern on essentially every single week, healthy or not.** A 0% miss rate looks good in isolation, but it's a statistical artifact: a system that says "worth investigating" unconditionally will always have a 0% miss rate, because it never says anything else. On the single most basic job of this feature — telling a manager whether a team needs attention — **the current AI layer provides close to zero discriminative value over the deterministic baseline.** This is a materially more honest, and more useful, conclusion than an earlier draft reached from two hand-picked examples.
 
-1. **Rule violation.** The prompt explicitly instructs the model to say a healthy, stable team is healthy — it manufactured concern anyway.
-2. **Backwards comparison.** 4.8 is *lower* than 17.5, not "higher." The model got the direction of its own comparison wrong.
+Illustrated concretely — Platform Team, week 8, score 91 (about as healthy as this dataset gets):
+> STATUS: Worth investigating
+> SIGNAL: Jira cycle time is 1.5 days faster than peer team's 6.5 days.
 
-We tightened the prompt specifically to fix this and re-ran the case — the failure rate dropped but did **not** disappear. This is the single most important finding of this sprint (see §3.1).
+The model **correctly computes that Platform's cycle time is better than its peer's** — and labels the team "worth investigating" anyway, in the same breath. This happened on 58 of 60 healthy weeks tested.
 
-> **📸 Screenshot 8 — Side-by-side comparison**
-> If possible, capture both coaching cards (Case 1 and Case 2) in the same screenshot or one after another, to visually show the contrast between a correct and a flawed output.
+> **📸 Screenshot 8 — A false-alarm example, live**
+> On the Platform Team (a healthy week), click "Get AI coaching suggestion" and capture the card — it will very likely say "Worth investigating" despite the team being healthy, reproducing this exact finding live.
 > Save as `docs/screenshots/08-coaching-comparison.png`, place here:
-> `![Correct vs. flawed AI coaching output](docs/screenshots/08-coaching-comparison.png)`
+> `![AI coaching false-alarm example](docs/screenshots/08-coaching-comparison.png)`
 
-### 2.5 Does the AI layer clear the bar Sprint 3 set?
+### 2.5 What Sprint 5's prompt-tightening *did* fix
 
-**Yes, conditionally.** On the early-warning case that matters most (a real, declining team), the AI layer adds genuine value over the raw baseline: it names the driving signal in plain language and gives a concrete next step, which the numbers-only dashboard doesn't do on its own. On the healthy-team control case, it does not yet reliably clear the bar — it should say "all good" and sometimes doesn't. This is exactly why Sprint 3/4's design (deterministic scoring as the system of record, AI as an optional, skippable layer) was the right call, not a hedge: a manager who never clicks the button loses nothing, and one who does gets a mostly-reliable assist with a known, documented failure mode.
+The rewrite from B to C wasn't wasted — it just didn't fix the most important thing:
+- **Format validity: 0% → 99%** — B was never designed to produce parseable output and didn't; C reliably does. This is what actually fixed the "unreadable, unscrollable" UI bug this sprint started from.
+- **Number grounding: 55% → 67%**, **comparison direction: 67% → 74%** — the explicit "double-check direction" rule measurably helped, without fully solving it.
+- **Latency: 6,689ms → 2,731ms p50** (2.4× faster) — a real, unplanned performance win from asking for 3 short lines instead of a paragraph.
+- **Driver match got worse: 67% → 33%** — compressing the SIGNAL line to "under 18 words" came at a real cost to correctly naming the mathematically top-weighted signal. A genuine, non-obvious tradeoff worth knowing.
+
+### 2.6 Does the AI layer clear the bar Sprint 3 set?
+
+Scored honestly against all 255 rows, not two examples, on Sprint 3's own three criteria:
+
+| Criterion | Verdict |
+|---|---|
+| **Risk detection** | ❌ Does not clear the bar. Flagging 97-100% of weeks regardless of actual status is not detection — the deterministic baseline's binary flag remains strictly more trustworthy. |
+| **Interpretability** | ✅ Where content is accurate, it explains *what* in plain language better than raw numbers. |
+| **Usefulness** | ⚠️ Mixed — the ACTION line is consistently well-formed even when STATUS is wrong, just noisy if shown regardless of real status. |
+
+**This is exactly why Sprint 3/4's original design — deterministic scoring as the system of record, AI strictly optional — was correct, and this evaluation is the evidence for it.** Per our own Responsible AI commitment (*"if it does not outperform the baseline... the rule-based layer remains the system of record"*), that's the real outcome here: the score and early-warning flag stay authoritative; the AI coaching button stays clearly a secondary, skippable assist, not a claim of comparable reliability.
 
 ---
 
 ## 3. Technical Analysis (20%)
 
-### 3.1 Model reasoning failures (primary finding)
+### 3.1 The false-alarm rate is the primary, actionable finding
 
-An 8B-parameter free-tier model, even given an **explicit, unambiguous instruction** not to manufacture concern and to double-check comparison direction, still did both in testing. This isn't a one-off — it reproduced across multiple runs. Root cause is almost certainly model capacity: multi-number comparative reasoning ("is 4.8 more or less than 17.5, and does that matter here") is a known weak point for small instruct models. A larger model (Workers AI's own `llama-3.3-70b-instruct-fp8-fast`, or an external frontier API) would likely reduce this substantially — at a real dollar cost this phase deliberately avoided.
+At n=255, this isn't a one-off: config C flags concern on 97% of genuinely healthy weeks and 100% of genuinely early-warning weeks — a system that has essentially learned to always express caution rather than genuinely discriminate. Root cause is very likely that a small instruct model, given a rule to "frame concern as worth investigating," over-applies that framing as a safe default regardless of whether the evidence actually supports it — consistent with known hedging/caution-biased behavior in smaller models. Plausible, untested fixes: a larger model (Workers AI's own `llama-3.3-70b-instruct-fp8-fast` — scoped as config D, not run here to conserve free-tier quota), few-shot examples showing correct "no concern" outputs in the prompt, or restructuring the task into an explicit binary classification step before any prose generation. Separately, and more solvable: driver match (33-67%) and number grounding (55-67%) also leave real room before a manager could fully trust the *specific* signal named.
 
 ### 3.2 A real operational incident (not hypothetical)
 
@@ -215,20 +230,24 @@ While preparing this submission, we discovered that the **Solstice team's entire
 
 This is real, first-hand evidence for exactly what our own Sprint 2 requirements doc flagged as **Must**-priority and explicitly deferred for this phase: FR18 (consent/access gating) and FR19 (role-based access). We're naming it here rather than omitting it because it's the clearest, most concrete argument in this entire project for *why* those requirements matter — not an abstract privacy concern, but something that already happened once.
 
-### 3.3 Other limitations
+### 3.3 A crash bug the harness found — and we fixed
 
-- **No ground truth for coaching quality.** Evaluation is necessarily qualitative (§2.1) — a real deployment would want managers rating notes 1-5 (which Sprint 4's architecture doc already anticipated: *"allows managers to rate whether an insight was useful or accurate"*) feeding back into prompt iteration.
-- **Thin real data.** Solstice, the one team with genuine ingested data, has only 1-2 weeks of history post-recovery — not enough for a meaningful trailing baseline. All coaching evaluation here necessarily used the two synthetic demo teams, the same limitation Sprint 3 already named.
-- **No output-consistency testing.** LLM generations aren't deterministic; the same evidence could produce a different note on a re-run. Not tested here for time.
-- **Free-tier quota ceiling.** Workers AI's free daily neuron allowance bounds how many coaching requests/day are sustainable at real organizational scale — fine for a pilot, a real constraint to plan around before wider rollout.
+One of the 5 edge cases (a missing/unavailable calendar signal) crashed the request server-side with `Cannot read properties of undefined (reading 'toFixed')`, on **every** attempt, in **both** B and C — a 100% reproduction rate, not a fluke. This directly violated Sprint 3's own stated requirement: *"Missing or unavailable signals should reduce the set of indicators used rather than prevent the system from functioning."* We fixed it the same day it was found — `buildPrompt` now omits a missing signal's line instead of crashing, confirmed working post-fix — but the 255-row dataset in §2 predates the fix, so it's still visible there as an error. This is arguably the single most concrete example in this whole report of what "evaluation surfaces real bugs" actually looks like in practice.
 
-### 3.4 What's needed before real end-to-end integration
+### 3.4 Other limitations
 
-1. **Access control** — even a lightweight login (Cloudflare Access, free up to 50 users) directly prevents the incident in §3.2 from recurring, and satisfies FR18/19.
-2. **Soft deletes / undo** — a team delete should be recoverable for a window, not instant and permanent.
-3. **A larger model or few-shot prompt examples** — to reduce the Case 2-style reasoning errors.
-4. **A manager-facing usefulness rating** on each coaching note, closing the evaluation loop with real usage data instead of our own qualitative read.
-5. **More real pilot data** — multiple teams, many weeks — before trusting coaching quality on a genuine (not synthetic) decline.
+- **No ground truth for coaching quality.** A real deployment would want managers rating notes 1-5 (which Sprint 4's architecture doc already anticipated) feeding back into prompt iteration — hence `eval/results.csv`'s two blank hand-scoring columns rather than a fabricated single "usefulness" number.
+- **Thin real data.** Solstice, the one team with genuine ingested data, has only 1-2 weeks of history post-recovery — not enough for a meaningful trailing baseline. All quantitative evaluation above necessarily used the two synthetic demo teams, the same limitation Sprint 3 already named.
+- **Free-tier quota.** 255 calls across B/C stayed within Workers AI's free daily allowance; config D (the 70B model) was scoped but not run, to conserve quota for this submission.
+
+### 3.5 What's needed before real end-to-end integration, in priority order
+
+1. **Fix the false-alarm rate.** This is the blocking issue, not a nice-to-have — until STATUS actually discriminates, the deterministic score alone remains the only trustworthy signal.
+2. **A manager-facing usefulness rating** on each note, closing the evaluation loop with real usage data.
+3. **Driver-match and grounding improvements** — likely a larger model or few-shot examples.
+4. **Access control** — even a lightweight login (Cloudflare Access, free up to 50 users) directly prevents the incident in §3.2 from recurring, and satisfies our own Sprint 2 doc's FR18/19 (deferred, Must-priority).
+5. **Soft deletes / undo** for team deletion.
+6. **More real pilot data** before trusting coaching quality on a genuine, not synthetic, decline.
 
 ---
 
@@ -254,6 +273,6 @@ Save every file into `docs/screenshots/` under the exact name below (the `![...]
 | 5 | `05-village-view.png` | Solstice team's 3D village | https://growth-3it.pages.dev, select Solstice |
 | 6 | `06-ai-coaching.png` | A coaching card showing Status/Signal/Next step | Click "Get AI coaching suggestion" on any team |
 | 7 | `07-compare-view.png` | Side-by-side team comparison | Click "Compare teams" |
-| 8 | `08-coaching-comparison.png` | A correct output next to a flawed one | Re-run Case 1 and Case 2 from §2 |
+| 8 | `08-coaching-comparison.png` | A healthy team (e.g. Platform Team) flagged "Worth investigating" — reproduces §2.4's headline finding live | Any healthy team's "Get AI coaching suggestion" button |
 
 Once the screenshots are in place, this file (`SPRINT5_SUBMISSION.md`) is the single file to export as PDF (or upload as-is, if Markdown is accepted) for the assignment submission.
