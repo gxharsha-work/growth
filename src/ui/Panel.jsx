@@ -4,6 +4,7 @@ import { ARCHETYPES, ARCHETYPE_IDS, GENERIC_SUGGESTIONS, guessArchetype } from '
 import { COMMONS_ID, countArchetypes, useVillageStore } from '../store/villageStore'
 import { useAppStore } from '../store/appStore'
 import { useTeamsStore } from '../store/teamsStore'
+import { useSignalsStore } from '../store/signalsStore'
 import { getTeamWeek } from '../logic/teamHealth'
 import { getCapabilityStatus, getCommonsStatus } from '../logic/buildingStatus'
 import ArchetypeGlyph from './ArchetypeGlyph'
@@ -15,6 +16,8 @@ export default function Panel() {
   const currentTeam = useAppStore((s) => s.currentTeam)
   const currentWeek = useAppStore((s) => s.currentWeek)
   const buildings = useVillageStore((s) => s.buildingsByTeam[currentTeam])
+  // Subscribed purely so this re-renders once signals finish loading async.
+  useSignalsStore((s) => s.weeklyByTeam[currentTeam])
   const placing = useVillageStore((s) => s.placing)
   const selectedId = useVillageStore((s) => s.selectedId)
   const startPlacing = useVillageStore((s) => s.startPlacing)

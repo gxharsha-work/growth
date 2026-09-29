@@ -1,0 +1,16 @@
+# Cloudflare Pages project config for Growth. Deployed with:
+#   wrangler pages deploy dist --project-name=growth
+#
+# This binds the shared D1 database to the Pages Functions in functions/api/
+# — the same database the ingestion Worker (worker-ingestion/) writes to on
+# its Cron Trigger. database_id is filled in after running:
+#   wrangler d1 create growth-db
+
+name = "growth"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "growth-db"
+database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"

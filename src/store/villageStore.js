@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { useTeamsStore } from './teamsStore'
 import { guessArchetype } from '../data/archetypes'
+import { api, probeApi } from '../lib/api'
 
 export const GRID_SIZE = 8
 export const TILE_SIZE = 2
@@ -78,17 +78,16 @@ export function countArchetypes(teamBuildings) {
 }
 
 let nextId = 1
-const makeId = () => `b${nextId++}`
+const makeLocalId = () => `local-b${Date.now().toString(36)}${nextId++}`
 
-function makeEntry({ name, archetype, col, row, justPlaced = false }) {
-  return { id: makeId(), name, archetype, col, row, justPlaced, notes: '' }
+function makeEntry({ id, name, archetype, col, row, notes = '', justPlaced = false }) {
+  return { id: id ?? makeLocalId(), name, archetype, notes, col, row, justPlaced }
 }
 
-// Every team starts with its suggested capabilities already on the island,
-// so nobody stares at an empty world on first load. Takes a capabilities
-// array directly (not a teamId) so it works the same for the static seed
-// teams and for a team created at runtime, which won't exist in any static
-// lookup table.
+// Local-only starter layout: used when no backend is reachable, or a team
+// (new or seed) hasn't been fetched from one yet. Every team starts with
+// its suggested capabilities already on the island, so nobody stares at an
+// empty world on first load.
 function defaultLayout(capabilities = []) {
   const layout = {}
   for (const name of capabilities) {
@@ -100,14 +99,12 @@ function defaultLayout(capabilities = []) {
   return layout
 }
 
-function defaultBuildingsByTeam() {
-  const teams = useTeamsStore.getState().teams
-  return Object.fromEntries(Object.values(teams).map((t) => [t.id, defaultLayout(t.capabilities)]))
-}
-
 export const useVillageStore = create((set, get) => ({
   // teamId -> tileKey -> { id, name, archetype, notes, col, row, justPlaced }
-  buildingsByTeam: defaultBuildingsByTeam(),
+  // Starts empty and fills in lazily per team via ensureBuildings — see
+  // appStore.setTeam / App.jsx's bootstrap effect / CompareView's loader.
+  buildingsByTeam: {},
+  loadedTeams: new Set(),
 
   // { name, archetype } being placed from the panel, or null
   placing: null,
@@ -164,29 +161,68 @@ export const useVillageStore = create((set, get) => ({
 
   setSelectedScreenPos: (pos) => set({ selectedScreenPos: pos }),
 
-  updateBuildingDetails: (teamId, id, { name, notes, archetype }) =>
+  // Loads a team's buildings the first time it's viewed — from the backend
+  // if reachable, otherwise the same local starter layout the app has
+  // always used. Safe to call repeatedly; only does work once per team.
+  ensureBuildings: async (teamId, capabilities = []) => {
+    if (!teamId || get().loadedTeams.has(teamId)) return
+    set((state) => ({ loadedTeams: new Set(state.loadedTeams).add(teamId) }))
+
+    if (await probeApi()) {
+      try {
+        const list = await api.get(`/teams/${teamId}/buildings`)
+        const layout = Object.fromEntries(
+          list.map((b) => [tileKey(b.col, b.row), { ...b, justPlaced: false }])
+        )
+        set((state) => ({ buildingsByTeam: { ...state.buildingsByTeam, [teamId]: layout } }))
+        return
+      } catch (err) {
+        console.error(`Failed to load buildings for ${teamId} from backend, using local layout:`, err)
+      }
+    }
+
+    set((state) => ({
+      buildingsByTeam: { ...state.buildingsByTeam, [teamId]: defaultLayout(capabilities) },
+    }))
+  },
+
+  updateBuildingDetails: async (teamId, id, { name, notes, archetype }) => {
+    const patch = {
+      ...(name !== undefined && { name }),
+      ...(notes !== undefined && { notes }),
+      ...(archetype !== undefined && { archetype }),
+    }
+
+    if (!id.startsWith('local-') && (await probeApi())) {
+      try {
+        await api.patch(`/buildings/${id}`, patch)
+      } catch (err) {
+        console.error('Failed to update building on backend, updating locally only:', err)
+      }
+    }
+
     set((state) => {
       const teamBuildings = state.buildingsByTeam[teamId]
       const key = Object.keys(teamBuildings ?? {}).find((k) => teamBuildings[k].id === id)
       if (!key) return {}
-      const current = teamBuildings[key]
       return {
         buildingsByTeam: {
           ...state.buildingsByTeam,
-          [teamId]: {
-            ...teamBuildings,
-            [key]: {
-              ...current,
-              name: name ?? current.name,
-              notes: notes ?? current.notes,
-              archetype: archetype ?? current.archetype,
-            },
-          },
+          [teamId]: { ...teamBuildings, [key]: { ...teamBuildings[key], ...patch } },
         },
       }
-    }),
+    })
+  },
 
-  removeBuilding: (teamId, id) =>
+  removeBuilding: async (teamId, id) => {
+    if (!id.startsWith('local-') && (await probeApi())) {
+      try {
+        await api.delete(`/buildings/${id}`)
+      } catch (err) {
+        console.error('Failed to delete building on backend, removing locally only:', err)
+      }
+    }
+
     set((state) => {
       const teamBuildings = state.buildingsByTeam[teamId]
       const key = Object.keys(teamBuildings ?? {}).find((k) => teamBuildings[k].id === id)
@@ -199,26 +235,34 @@ export const useVillageStore = create((set, get) => ({
         selectedScreenPos: state.selectedId === id ? null : state.selectedScreenPos,
         highlightedId: state.highlightedId === id ? null : state.highlightedId,
       }
-    }),
+    })
+  },
 
   // Called when a new team is created (appStore.createTeam) — seeds its
-  // island the same way the initial seed teams get one, using whatever
-  // capabilities it starts with (usually none yet).
+  // island the same way the initial seed teams get one. A freshly created
+  // team always starts with `capabilities: []` (see teamsStore.createTeam),
+  // so this is just registering an empty layout — no backend call needed,
+  // there's nothing to create yet.
   ensureTeamLayout: (teamId, capabilities) =>
-    set((state) =>
-      state.buildingsByTeam[teamId]
-        ? {}
-        : { buildingsByTeam: { ...state.buildingsByTeam, [teamId]: defaultLayout(capabilities) } }
-    ),
+    set((state) => ({
+      buildingsByTeam: state.buildingsByTeam[teamId]
+        ? state.buildingsByTeam
+        : { ...state.buildingsByTeam, [teamId]: defaultLayout(capabilities) },
+      loadedTeams: new Set(state.loadedTeams).add(teamId),
+    })),
 
   // Called when a team is deleted (appStore.deleteTeam) — drops its layout
   // entirely; nothing else references buildingsByTeam by a stale teamId.
+  // The backend cascade-deletes its buildings server-side (teamsStore's
+  // DELETE /teams/:id) — this is just local cache cleanup.
   deleteTeamLayout: (teamId) =>
     set((state) => {
       if (!(teamId in state.buildingsByTeam)) return {}
       const next = { ...state.buildingsByTeam }
       delete next[teamId]
-      return { buildingsByTeam: next }
+      const loaded = new Set(state.loadedTeams)
+      loaded.delete(teamId)
+      return { buildingsByTeam: next, loadedTeams: loaded }
     }),
 
   flashBlocked: (col, row) => {
@@ -230,33 +274,55 @@ export const useVillageStore = create((set, get) => ({
   },
 
   // Adds a capability on the tile the user clicked (placing mode).
-  placeBuilding: (teamId, col, row) => {
+  placeBuilding: async (teamId, col, row) => {
     const { placing, isTileOccupied, inBounds, flashBlocked } = get()
     if (!placing) return
     if (!inBounds(col, row) || isTileOccupied(teamId, col, row)) {
       flashBlocked(col, row)
       return
     }
-    const entry = makeEntry({ ...placing, col, row, justPlaced: true })
+    set({ placing: null, hoveredTile: null })
+
+    let id = null
+    if (await probeApi()) {
+      try {
+        const created = await api.post(`/teams/${teamId}/buildings`, { ...placing, col, row })
+        id = created.id
+      } catch (err) {
+        console.error('Failed to create building on backend, adding locally only:', err)
+      }
+    }
+
+    const entry = makeEntry({ id, ...placing, col, row, justPlaced: true })
     set((state) => ({
       buildingsByTeam: {
         ...state.buildingsByTeam,
         [teamId]: { ...state.buildingsByTeam[teamId], [tileKey(col, row)]: entry },
       },
-      placing: null,
-      hoveredTile: null,
     }))
     get().settleJustPlaced(teamId, entry.id, col, row)
   },
 
-  // Adds a capability on the best free tile — the zero-friction path used by
-  // suggestion chips. Returns the new id, or null when the island is full.
-  addCapability: (teamId, { name, archetype }) => {
+  // Adds a capability on the best free tile — the zero-friction path used
+  // by suggestion chips. Returns the new id, or null when the island is
+  // full.
+  addCapability: async (teamId, { name, archetype }) => {
     const teamBuildings = get().buildingsByTeam[teamId] ?? {}
     const spot = pickAutoTile(teamBuildings)
     if (!spot) return null
     const chosen = archetype ?? guessArchetype(name, countArchetypes(teamBuildings))
-    const entry = makeEntry({ name, archetype: chosen, ...spot, justPlaced: true })
+
+    let id = null
+    if (await probeApi()) {
+      try {
+        const created = await api.post(`/teams/${teamId}/buildings`, { name, archetype: chosen, ...spot })
+        id = created.id
+      } catch (err) {
+        console.error('Failed to create building on backend, adding locally only:', err)
+      }
+    }
+
+    const entry = makeEntry({ id, name, archetype: chosen, ...spot, justPlaced: true })
     set((state) => ({
       buildingsByTeam: {
         ...state.buildingsByTeam,
@@ -289,7 +355,7 @@ export const useVillageStore = create((set, get) => ({
 
   cancelDragging: () => set({ draggingId: null, hoveredTile: null }),
 
-  dropBuilding: (teamId, col, row) => {
+  dropBuilding: async (teamId, col, row) => {
     const { draggingId, buildingsByTeam, isTileOccupied, inBounds, flashBlocked } = get()
     if (!draggingId) return
     const teamBuildings = buildingsByTeam[teamId] ?? {}
@@ -313,5 +379,13 @@ export const useVillageStore = create((set, get) => ({
         hoveredTile: null,
       }
     })
+
+    if (!entry.id.startsWith('local-') && (await probeApi())) {
+      try {
+        await api.patch(`/buildings/${entry.id}`, { col, row })
+      } catch (err) {
+        console.error('Failed to move building on backend, moved locally only:', err)
+      }
+    }
   },
 }))

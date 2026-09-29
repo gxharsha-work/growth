@@ -3,6 +3,8 @@ import { TriangleAlert } from 'lucide-react'
 import * as THREE from 'three'
 import { useAppStore } from '../store/appStore'
 import { useTeamsStore } from '../store/teamsStore'
+import { useVillageStore } from '../store/villageStore'
+import { useSignalsStore } from '../store/signalsStore'
 import { getTeamWeek } from '../logic/teamHealth'
 import Scene from '../scene/Scene'
 import './compareView.css'
@@ -14,6 +16,11 @@ export default function CompareView() {
   const currentWeek = useAppStore((s) => s.currentWeek)
   const compareTeamIds = useAppStore((s) => s.compareTeamIds)
   const teams = useTeamsStore((s) => s.teams)
+  // Subscribed purely so this re-renders once buildings/signals finish
+  // loading async for whichever teams are picked (setViewMode/
+  // toggleCompareTeam/setCompareTeamIds already kick off the loads).
+  useVillageStore((s) => s.buildingsByTeam)
+  useSignalsStore((s) => s.weeklyByTeam)
 
   return (
     <div className="compare-view">

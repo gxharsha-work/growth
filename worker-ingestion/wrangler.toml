@@ -1,0 +1,32 @@
+# Growth's ingestion Worker. Deployed with: wrangler deploy
+#
+# Shares the same D1 database as the main Pages project (wrangler.toml at
+# the repo root) — both bind it as `DB`, D1 doesn't mind multiple
+# consumers. database_id must match the root wrangler.toml's after running
+# `wrangler d1 create growth-db` (run that once, use the same id in both
+# files).
+#
+# Secrets (never in this file — set with `wrangler secret put <NAME>`):
+#   MY_ATLASSIAN_TOKEN, GOOGLE_CALENDAR_CLIENT_SECRET,
+#   GOOGLE_CALENDAR_REFRESH_TOKEN
+
+name = "growth-ingestion"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+
+# Daily at 13:00 UTC (~9am ET) — matches the "at least a daily refresh"
+# requirement (FR1/FR6) without needing anyone awake to trigger it.
+[triggers]
+crons = ["0 13 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "growth-db"
+database_id = "REPLACE_AFTER_WRANGLER_D1_CREATE"
+
+[vars]
+PILOT_TEAM_ID = "solstice"
+JIRA_SITE_URL = "https://growth3d.atlassian.net"
+JIRA_EMAIL = "REPLACE_WITH_JIRA_EMAIL"
+JIRA_BOARD_ID = "1"
+GOOGLE_CALENDAR_CLIENT_ID = "REPLACE_WITH_DESKTOP_OAUTH_CLIENT_ID"

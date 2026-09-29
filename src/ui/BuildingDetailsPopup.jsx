@@ -3,6 +3,7 @@ import { Pencil, X, Trash2, Sprout, Check } from 'lucide-react'
 import { ARCHETYPES, ARCHETYPE_IDS } from '../data/archetypes'
 import { COMMONS_ID, useVillageStore } from '../store/villageStore'
 import { useAppStore } from '../store/appStore'
+import { useSignalsStore } from '../store/signalsStore'
 import { getTeamWeek } from '../logic/teamHealth'
 import { getCapabilityStatus, getCommonsStatus } from '../logic/buildingStatus'
 import ArchetypeGlyph from './ArchetypeGlyph'
@@ -20,6 +21,8 @@ export default function BuildingDetailsPopup() {
   const clearSelection = useVillageStore((s) => s.clearSelection)
   const updateBuildingDetails = useVillageStore((s) => s.updateBuildingDetails)
   const removeBuilding = useVillageStore((s) => s.removeBuilding)
+  // Subscribed purely so this re-renders once signals finish loading async.
+  useSignalsStore((s) => s.weeklyByTeam[currentTeam])
 
   const [editMode, setEditMode] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)

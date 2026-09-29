@@ -3,7 +3,7 @@
 // should read from here rather than calling healthScore.js directly, so the
 // scoring math and the data shape stay decoupled from components.
 
-import { getWeeklySignalsForTeam } from '../data/mockSignals'
+import { useSignalsStore } from '../store/signalsStore'
 import {
   computeHealthScore,
   computeCapabilityScore,
@@ -29,7 +29,13 @@ const cache = new Map()
 export function getTeamWeeklyHealth(teamId) {
   if (cache.has(teamId)) return cache.get(teamId)
 
-  const weeks = getWeeklySignalsForTeam(teamId)
+  // Signals load asynchronously (see signalsStore.js's ensureSignals) — an
+  // empty array here means "not loaded yet, not a team with zero weeks",
+  // so it's deliberately never cached: the next call (triggered by the
+  // re-render once signals arrive) recomputes and caches for real.
+  const weeks = useSignalsStore.getState().weeklyByTeam[teamId] ?? []
+  if (weeks.length === 0) return []
+
   const scores = weeks.map(computeHealthScore)
   const capabilityScores = weeks.map(computeCapabilityScore)
 

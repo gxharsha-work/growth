@@ -5,9 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:full": "vite build && wrangler pages dev dist",
     "build": "vite build",
     "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
+    "deploy": "vite build && wrangler pages deploy dist --project-name=growth",
+    "db:migrate:local": "wrangler d1 migrations apply growth-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply growth-db --remote",
     "ingest:jira": "node --env-file=.env scripts/jira-ingest.js",
     "auth:calendar": "node --env-file=.env scripts/google-calendar-auth.js",
     "ingest:calendar": "node --env-file=.env scripts/google-calendar-ingest.js"
@@ -15,6 +20,7 @@
   "dependencies": {
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
+    "hono": "^4.13.10",
     "lucide-react": "^1.47.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
@@ -22,10 +28,13 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260929.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
-    "vite": "^8.3.0"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "wrangler": "^4.143.0"
   }
 }

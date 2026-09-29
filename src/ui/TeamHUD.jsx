@@ -12,8 +12,8 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '../store/appStore'
 import { useTeamsStore, listTeams } from '../store/teamsStore'
+import { useSignalsStore } from '../store/signalsStore'
 import { getTeamWeek } from '../logic/teamHealth'
-import { getSignalSource } from '../data/mockSignals'
 import { levelFor } from '../logic/buildingStatus'
 import { SignalPill, JiraDetailsList, CalendarDetailsList } from './SignalPill'
 import ConnectCalendar from './ConnectCalendar'
@@ -38,6 +38,9 @@ export default function TeamHUD() {
 
   const teams = useTeamsStore(useShallow(listTeams))
   const updateTeam = useTeamsStore((s) => s.updateTeam)
+  // Subscribed purely so this re-renders once signals finish loading async
+  // (getTeamWeek below reads the store imperatively, not reactively).
+  const signalSource = useSignalsStore((s) => s.sourceByTeam[currentTeam])
 
   const [expandedSignal, setExpandedSignal] = useState(null) // 'jira' | 'calendar' | null
   const [editingId, setEditingId] = useState(null) // null = create mode
@@ -96,12 +99,12 @@ export default function TeamHUD() {
 
   const trimmedName = name.trim()
 
-  function submitTeam() {
+  async function submitTeam() {
     if (!trimmedName) return
     if (editingId) {
       updateTeam(editingId, { name: trimmedName, sizeBucket, functionType })
     } else {
-      const id = createTeam({ name: trimmedName, sizeBucket, functionType })
+      const id = await createTeam({ name: trimmedName, sizeBucket, functionType })
       if (id) setTeam(id)
     }
     closeComposer()
@@ -275,7 +278,7 @@ export default function TeamHUD() {
         </div>
       )}
 
-      {!isCompare && weekHealth && getSignalSource(currentTeam) === 'generated' && (
+      {!isCompare && weekHealth && signalSource === 'generated' && (
         <div className="hud-signal hud-signal--muted glass">
           Demo data — no live integration connected yet
         </div>
