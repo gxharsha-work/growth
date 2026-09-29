@@ -1,3 +1,11 @@
+// Real signals pulled by scripts/jira-ingest.js (`npm run ingest:jira`) and
+// scripts/google-calendar-ingest.js (`npm run ingest:calendar`). Only
+// `jira`/`calendar` are real so far; `github` is a neutral placeholder
+// until that ingestion step lands.
+import liveJiraWeeks from './jiraSignals.generated.json'
+import liveCalendarWeeks from './calendarSignals.generated.json'
+import { generateWeeklyRows } from './generatedSignals'
+
 // Mock signal data for two teams across 8 consecutive weeks.
 //
 // This is deliberately hand-tuned (not `Math.random()`) so the narrative is
@@ -58,7 +66,59 @@ function buildWeeks(rows) {
 
 export const WEEK_COUNT = 8
 
-export const WEEKLY_SIGNALS = {
+// TODO(github-ingestion): replace with real GitHub-derived values once that
+// ingestion step lands.
+const PENDING_GITHUB = { prCount: 0, avgReviewTurnaroundHours: 12, pctCommitsAfter7pm: 15 }
+const PENDING_CALENDAR = { avgMeetingHoursPerWeek: 6 }
+
+// Jira and calendar ingestion run independently (different days, different
+// cadences), so merge by `isoWeek` rather than trusting each file's stored
+// `week` index — that keeps the two sources from drifting out of sync.
+// Jira is the anchor signal: a week with calendar data but no jira data has
+// nothing to show (healthScore.js requires `signals.jira`), so it's
+// dropped rather than given a placeholder.
+const liveTeamIds = new Set([...Object.keys(liveJiraWeeks), ...Object.keys(liveCalendarWeeks)])
+
+const liveTeams = Object.fromEntries(
+  Array.from(liveTeamIds).map((teamId) => {
+    const jiraByWeek = new Map((liveJiraWeeks[teamId] ?? []).map((row) => [row.isoWeek, row.jira]))
+    const calendarByWeek = new Map(
+      (liveCalendarWeeks[teamId] ?? []).map((row) => [row.isoWeek, row.calendar])
+    )
+
+    const weeks = [...jiraByWeek.keys()].sort().map((isoWeek, i) => ({
+      week: i + 1,
+      jira: jiraByWeek.get(isoWeek),
+      github: PENDING_GITHUB,
+      calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
+    }))
+
+    return [teamId, weeks]
+  })
+)
+
+export const HAND_TUNED_IDS = new Set(['platform', 'backend'])
+const HAND_TUNED = {
   platform: buildWeeks(PLATFORM_ROWS),
   backend: buildWeeks(BACKEND_ROWS),
+}
+
+// Where a team's signals come from: hand-tuned demo narrative, real ingested
+// data, or (for any team without either) a deterministic generated fallback.
+export function getSignalSource(teamId) {
+  if (HAND_TUNED_IDS.has(teamId)) return 'hand-tuned'
+  if (liveTeams[teamId]) return 'live'
+  return 'generated'
+}
+
+// Replaces the old static WEEKLY_SIGNALS object: WEEKLY_SIGNALS was built
+// once at module load, but a team created at runtime needs signals the
+// moment teamHealth.js first asks for it. This is a pure function of
+// teamId instead, so teamHealth.js's never-invalidated per-teamId cache
+// stays safe without needing any invalidation logic.
+export function getWeeklySignalsForTeam(teamId) {
+  if (!teamId) return []
+  if (HAND_TUNED[teamId]) return HAND_TUNED[teamId]
+  if (liveTeams[teamId]) return liveTeams[teamId]
+  return buildWeeks(generateWeeklyRows(teamId))
 }

@@ -1,0 +1,22 @@
+# Cloudflare Pages project config for Growth. Deployed with:
+#   wrangler pages deploy dist --project-name=growth
+#
+# This binds the shared D1 database to the Pages Functions in functions/api/
+# — the same database the ingestion Worker (worker-ingestion/) writes to on
+# its Cron Trigger. database_id is filled in after running:
+#   wrangler d1 create growth-db
+
+name = "growth"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "growth-db"
+database_id = "ce889c2f-cd60-4182-83a2-7bac95d5289c"
+
+# Workers AI (free tier, no billing needed on the Workers Free plan) — runs
+# the AI coaching suggestion (Sprint 3's stage 5, "AI Coaching") server-side
+# in functions/api/_lib/app.ts's POST /api/insight. See EVALUATION.md.
+[ai]
+binding = "AI"

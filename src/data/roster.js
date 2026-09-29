@@ -1,28 +1,8 @@
-// Static roster + peer cohort data — stand-in for a future HRIS integration (FR4)
-// and peer-group tagging (FR8). All names are fictional placeholders.
-
-export const TEAM_IDS = ['platform', 'backend']
-
-export const TEAMS = {
-  platform: {
-    id: 'platform',
-    name: 'Platform Team',
-    // FR8: peer cohort tags — teams sharing these are considered a valid
-    // peer-comparison pair (same headcount bucket, same function type).
-    cohort: {
-      sizeBucket: '6-10 engineers',
-      functionType: 'Backend/Platform',
-    },
-  },
-  backend: {
-    id: 'backend',
-    name: 'Backend Team',
-    cohort: {
-      sizeBucket: '6-10 engineers',
-      functionType: 'Backend/Platform',
-    },
-  },
-}
+// Static roster data — stand-in for a future HRIS integration (FR4). All
+// names are fictional placeholders. The team list itself (id, name, cohort,
+// capabilities) now lives in src/store/teamsStore.js so it can be created/
+// renamed/deleted at runtime — ROSTERS (member lists) is out of scope for
+// that and stays static here, keyed by the same team ids.
 
 export const ROSTERS = {
   platform: [
@@ -39,5 +19,14 @@ export const ROSTERS = {
     { name: 'Tariq Malik', role: 'Backend Engineer', team: 'backend' },
     { name: 'Grace Owusu', role: 'Backend Engineer', team: 'backend' },
     { name: 'Ken Ibarra', role: 'Backend Engineer', team: 'backend' },
+  ],
+  // Real assignees from the growth3d SCRUM Jira project.
+  solstice: [
+    { name: 'Kristen Wang', role: 'Growth Lead', team: 'solstice' },
+    { name: 'Jenny Shen', role: 'SEO & Content Strategist', team: 'solstice' },
+    { name: 'Harshavardhini Gururaj', role: 'Paid Media Manager', team: 'solstice' },
+    { name: 'Saloni Parekh', role: 'Lifecycle/CRM Marketer', team: 'solstice' },
+    { name: 'Vicky Lin', role: 'Analyst', team: 'solstice' },
+    { name: 'Harshini Sivachitravel', role: 'Referral & Partnerships Lead', team: 'solstice' },
   ],
 }

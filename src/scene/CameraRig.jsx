@@ -4,9 +4,9 @@ import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import { useVillageStore } from '../store/villageStore'
 
-const START_POS = new THREE.Vector3(4, 22, 30)
-const END_POS = new THREE.Vector3(11, 12, 14)
-const TARGET = new THREE.Vector3(0, 0, 0)
+const START_POS = new THREE.Vector3(6, 30, 40)
+const END_POS = new THREE.Vector3(14, 13, 18)
+const TARGET = new THREE.Vector3(0, -0.6, 0)
 const INTRO_DURATION = 2.2
 
 function easeOutCubic(t) {
@@ -47,10 +47,10 @@ export default function CameraRig() {
       enableDamping
       dampingFactor={0.08}
       enablePan={false}
-      minDistance={8}
-      maxDistance={22}
-      minPolarAngle={Math.PI / 6}
-      maxPolarAngle={Math.PI / 2.15}
+      minDistance={9}
+      maxDistance={32}
+      minPolarAngle={Math.PI / 7}
+      maxPolarAngle={Math.PI / 2.04}
     />
   )
 }

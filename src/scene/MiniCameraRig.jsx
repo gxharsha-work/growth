@@ -1,8 +1,8 @@
 import { useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 
-const RADIUS = 15
-const HEIGHT = 11
+const RADIUS = 23
+const HEIGHT = 15
 
 // Fixed, gently auto-rotating camera for the read-only peer comparison
 // mini-villages — no OrbitControls, nothing for the viewer to fight with.
@@ -17,7 +17,7 @@ export default function MiniCameraRig() {
       HEIGHT,
       Math.cos(angle.current) * RADIUS
     )
-    camera.lookAt(0, 0, 0)
+    camera.lookAt(0, -0.6, 0)
   })
 
   return null

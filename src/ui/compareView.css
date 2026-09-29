@@ -4,7 +4,8 @@
   display: flex;
   gap: 20px;
   padding: 88px 24px 116px;
-  font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-family: var(--font);
+  color: var(--ink);
 }
 
 .compare-card {
@@ -12,30 +13,30 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: #fffaf0;
-  border: 2px solid #f3e0bd;
-  border-radius: 22px;
   padding: 14px;
-  box-shadow: 0 10px 30px rgba(120, 80, 30, 0.18);
   gap: 8px;
 }
 
 .compare-card-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  padding: 0 4px;
 }
 
 .compare-team-name {
   font-size: 15px;
   font-weight: 800;
-  color: #5a4128;
+  letter-spacing: -0.01em;
 }
 
 .compare-score {
-  font-size: 22px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 15px;
   font-weight: 800;
-  color: #6b8f4a;
+  color: var(--good);
+  background: rgba(31, 157, 104, 0.13);
 }
 
 .compare-warning-wrap {
@@ -51,15 +52,18 @@
 }
 
 .compare-warning {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   min-height: 0;
   overflow: hidden;
-  font-size: 11px;
-  font-weight: 700;
-  color: #a13d31;
-  background: #fdeceb;
-  border: 2px solid #f3b0a8;
+  font-size: 12px;
+  font-weight: 600;
+  color: #a13036;
+  background: rgba(255, 240, 239, 0.92);
+  border: 1px solid rgba(229, 72, 77, 0.28);
   border-radius: 12px;
-  padding: 6px 10px;
+  padding: 7px 11px;
 }
 
 .compare-canvas-wrap {

@@ -2,7 +2,10 @@ import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useVillageStore } from '../store/villageStore'
 import GradientSky, { WEATHER_TRANSITION_RATE } from './GradientSky'
+import Island from './Island'
 import Ground from './Ground'
+import Commons from './Commons'
+import Paths from './Paths'
 import Building from './Building'
 import FloatingGhost from './FloatingGhost'
 import Decor from './Decor'
@@ -51,17 +54,20 @@ export default function Scene({
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-left={-14}
-        shadow-camera-right={14}
-        shadow-camera-top={14}
-        shadow-camera-bottom={-14}
+        shadow-camera-left={-16}
+        shadow-camera-right={16}
+        shadow-camera-top={16}
+        shadow-camera-bottom={-16}
         shadow-camera-near={1}
-        shadow-camera-far={40}
+        shadow-camera-far={48}
         shadow-bias={-0.0015}
       />
 
+      <Island weather={weather} />
       <Ground teamId={teamId} interactive={interactive} />
       <Decor />
+      <Paths teamId={teamId} />
+      <Commons weekHealth={weekHealth} interactive={interactive} />
 
       {Object.values(buildings ?? {}).map((b) => (
         <Building

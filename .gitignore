@@ -7,10 +7,18 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+.env
+.google-calendar-token.json
+
 node_modules
 dist
 dist-ssr
 *.local
+
+# Cloudflare: local D1 state, wrangler's dev cache, and its per-machine
+# config (auth tokens) — never committed, per project (root + worker-ingestion)
+.wrangler
+.dev.vars
 
 # Editor directories and files
 .vscode/*

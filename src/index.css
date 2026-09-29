@@ -1,5 +1,26 @@
 :root {
   color-scheme: light;
+
+  --font: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --ink: #16223a;
+  --ink-2: #4a5876;
+  --ink-3: #8592ab;
+  --line: rgba(22, 34, 58, 0.09);
+  --wash: rgba(22, 34, 58, 0.045);
+
+  --accent: #4f5bf0;
+  --accent-soft: rgba(79, 91, 240, 0.12);
+  --accent-grad: linear-gradient(135deg, #5a63f2 0%, #7a5cf0 100%);
+
+  --good: #1f9d68;
+  --warn: #dd9a12;
+  --bad: #e5484d;
+
+  --glass: rgba(255, 255, 255, 0.74);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --shadow: 0 24px 60px -14px rgba(24, 40, 90, 0.32), 0 2px 8px rgba(24, 40, 90, 0.08);
+  --radius: 22px;
 }
 
 html,
@@ -10,9 +31,25 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: 'Baloo 2', 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-family: var(--font);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
   box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* shared frosted-glass surface used by the panel, HUD cards and popups */
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(22px) saturate(1.6);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius);
 }

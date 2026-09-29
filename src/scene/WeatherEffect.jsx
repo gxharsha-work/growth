@@ -3,9 +3,9 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { WEATHER_TRANSITION_RATE } from './GradientSky'
 
-const COUNT = 240
-const AREA = 20
-const HEIGHT = 9
+const COUNT = 320
+const AREA = 26
+const HEIGHT = 11
 const FALL_SPEED = 9
 
 // Falling-rain particle effect layered over the whole scene. This is meant
