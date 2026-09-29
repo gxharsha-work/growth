@@ -3,12 +3,20 @@
   z-index: 10;
   top: 24px;
   right: 24px;
+  bottom: 24px;
   width: 268px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   font-family: var(--font);
   color: var(--ink);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 34, 58, 0.18) transparent;
+  /* room to breathe at the bottom of the scroll so the last card isn't
+     flush against the edge of the viewport */
+  padding-bottom: 4px;
 }
 
 /* ---------- team switcher ---------- */

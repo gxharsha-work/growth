@@ -16,6 +16,10 @@
 // and never make an individual-level claim (the evidence itself is already
 // team-level aggregate, so there's nothing individual to leak, but the
 // prompt still says so explicitly as a second layer of defense).
+//
+// Output is a fixed 3-line structure (STATUS/SIGNAL/ACTION), not a free
+// paragraph — short enough to fit in the HUD's fixed-width sidebar without
+// scrolling, and easy to scan at a glance rather than read like an essay.
 
 const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8'
 
@@ -34,6 +38,8 @@ export type CoachingEvidence = {
   }
   peer?: { name: string; score: number; signals: CoachingEvidence['signals'] }
 }
+
+export type CoachingNote = { status: string; signal: string; action: string }
 
 function buildPrompt(ev: CoachingEvidence): string {
   const trendWord = ev.trend > 2 ? 'improving' : ev.trend < -2 ? 'declining' : 'holding steady'
@@ -62,28 +68,49 @@ const SYSTEM_PROMPT = `You are a coaching assistant inside Growth, a tool engine
 monitor team health. You will be given this week's team-level metrics for ONE team, already \
 aggregated — you never see any individual person's data.
 
-Write a short coaching note (3-5 sentences, plain text, no markdown/bullets) for the manager. Rules, \
-all mandatory:
+Reply with EXACTLY three lines, this format, nothing before or after:
+STATUS: <5 words max — the one-line verdict, e.g. "Worth investigating" or "Healthy, stable">
+SIGNAL: <under 18 words — the ONE signal that most explains this week's score, with the peer number for context>
+ACTION: <under 16 words — one concrete, specific next step for the manager>
+
+Rules, all mandatory:
 1. Only reference numbers and facts given to you below. Never invent a metric, a person, or a cause.
 2. Never diagnose burnout, predict attrition, or make any claim about a specific individual — you \
 only have team-level aggregates, so there is nothing individual to discuss anyway.
-3. Frame everything as "worth investigating" or "worth checking in on," never as a certainty or verdict.
-4. Name the ONE or TWO signals that most explain this week's score, using the peer comparison as \
-context for whether a number is actually unusual for a team like this, not just different.
-5. End with one concrete, low-effort suggested next step for the manager (e.g. a specific question to \
-ask in a 1:1, a specific process to review) — not a generic platitude.
-6. If early-warning is NOT triggered and the trend is stable or improving, say so plainly and briefly \
-instead of manufacturing concern.`
+3. Frame concern as "worth investigating," never as a certainty or verdict.
+4. Double-check any comparison you make against the peer's number is actually in the right direction \
+(a LOWER number than the peer is not "high" just because it's being mentioned).
+5. If early-warning is NOT triggered and the trend is stable or improving, STATUS should say so \
+plainly (e.g. "Healthy, stable") — do not manufacture concern out of a normal number.
+6. No markdown, no bullets, no extra commentary — exactly the three labeled lines above.`
 
-export async function generateCoachingNote(ai: Ai, evidence: CoachingEvidence): Promise<string> {
+const LINE_PATTERN = /^(STATUS|SIGNAL|ACTION)\s*:\s*(.+)$/im
+
+function parseNote(raw: string): CoachingNote {
+  const note: CoachingNote = { status: '', signal: '', action: '' }
+  for (const line of raw.split('\n')) {
+    const match = line.match(LINE_PATTERN)
+    if (!match) continue
+    const key = match[1].toLowerCase() as 'status' | 'signal' | 'action'
+    note[key] = match[2].trim()
+  }
+  // Small models occasionally drop the labels — fall back to showing
+  // whatever text came back rather than three blank lines.
+  if (!note.status && !note.signal && !note.action) {
+    note.signal = raw.trim().slice(0, 200)
+  }
+  return note
+}
+
+export async function generateCoachingNote(ai: Ai, evidence: CoachingEvidence): Promise<CoachingNote> {
   const result = await ai.run(MODEL, {
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: buildPrompt(evidence) },
     ],
-    max_tokens: 220,
+    max_tokens: 110,
   })
   const text = (result as { response?: string }).response
   if (!text) throw new Error('Workers AI returned no response text')
-  return text.trim()
+  return parseNote(text)
 }

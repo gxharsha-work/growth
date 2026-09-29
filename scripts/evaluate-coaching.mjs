@@ -35,6 +35,7 @@ function evidenceSignals(row) {
   }
 }
 
+// Returns { status, signal, action } — see functions/api/_lib/coaching.ts.
 async function getInsight(evidence) {
   const res = await fetch(`${BASE}/api/insight`, {
     method: 'POST',
@@ -43,7 +44,13 @@ async function getInsight(evidence) {
   })
   const body = await res.json()
   if (!res.ok) throw new Error(body.error ?? `insight request failed (${res.status})`)
-  return body.text
+  return body
+}
+
+function printNote(note) {
+  console.log(`  STATUS: ${note.status}`)
+  console.log(`  SIGNAL: ${note.signal}`)
+  console.log(`  ACTION: ${note.action}`)
 }
 
 async function main() {
@@ -90,7 +97,7 @@ async function main() {
     peer: { name: 'Platform Team', score: scores.platform[7], signals: evidenceSignals(platformWeek8) },
   }
   const backendNote = await getInsight(backendEvidence)
-  console.log(backendNote)
+  printNote(backendNote)
 
   console.log('\n=== AI coaching layer: Platform Team, week 8 (Healthy, control case) ===\n')
   const platformEvidence = {
@@ -103,7 +110,7 @@ async function main() {
     peer: { name: 'Backend Team', score: scores.backend[7], signals: evidenceSignals(backendWeek8) },
   }
   const platformNote = await getInsight(platformEvidence)
-  console.log(platformNote)
+  printNote(platformNote)
 
   console.log('\nDone. Copy the table + notes above into EVALUATION.md if they changed.')
 }

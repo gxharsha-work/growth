@@ -13,6 +13,11 @@ import './coachingNote.css'
 // raw per-person data. A failure here (Workers AI is an enhancement, not a
 // dependency, per the architecture doc) shows an inline error, not a
 // broken page — the score/signals above this are unaffected either way.
+//
+// The API returns a fixed 3-line shape ({status, signal, action}, see
+// coaching.ts), rendered as three short labeled rows rather than a
+// paragraph — short and scannable enough to fit the HUD's fixed-width
+// sidebar without needing to scroll.
 
 function evidenceSignals(weekHealth) {
   const { jira, github, calendar } = weekHealth.signals
@@ -49,13 +54,13 @@ function findPeer(teamId, currentWeek) {
 }
 
 export default function CoachingNote({ teamId, currentWeek, weekHealth }) {
-  const [status, setStatus] = useState('idle') // idle | loading | done | error
-  const [text, setText] = useState('')
+  const [phase, setPhase] = useState('idle') // idle | loading | done | error
+  const [note, setNote] = useState(null) // { status, signal, action }
   const [error, setError] = useState('')
   const team = useTeamsStore((s) => s.teams[teamId])
 
   async function handleClick() {
-    setStatus('loading')
+    setPhase('loading')
     setError('')
     try {
       const prevWeek = currentWeek > 0 ? getTeamWeek(teamId, currentWeek - 1) : null
@@ -68,12 +73,12 @@ export default function CoachingNote({ teamId, currentWeek, weekHealth }) {
         signals: evidenceSignals(weekHealth),
         peer: findPeer(teamId, currentWeek) ?? undefined,
       }
-      const { text: note } = await api.post('/insight', evidence)
-      setText(note)
-      setStatus('done')
+      const result = await api.post('/insight', evidence)
+      setNote(result)
+      setPhase('done')
     } catch (err) {
       setError(err.message)
-      setStatus('error')
+      setPhase('error')
     }
   }
 
@@ -81,7 +86,7 @@ export default function CoachingNote({ teamId, currentWeek, weekHealth }) {
 
   return (
     <div className="coaching-note">
-      {status === 'idle' && (
+      {phase === 'idle' && (
         <button
           className={`coaching-note-trigger glass${weekHealth.earlyWarning ? ' coaching-note-trigger--warning' : ''}`}
           onClick={handleClick}
@@ -90,21 +95,38 @@ export default function CoachingNote({ teamId, currentWeek, weekHealth }) {
           Get AI coaching suggestion
         </button>
       )}
-      {status === 'loading' && (
+      {phase === 'loading' && (
         <div className="coaching-note-card glass coaching-note-card--loading">
           <Sparkles size={15} className="coaching-note-spin" />
           Thinking it through...
         </div>
       )}
-      {status === 'done' && (
+      {phase === 'done' && note && (
         <div className="coaching-note-card glass">
-          <span className="coaching-note-label">
-            <Sparkles size={13} /> AI coaching suggestion
-          </span>
-          <p>{text}</p>
+          <div className="coaching-note-head">
+            <span className="coaching-note-label">
+              <Sparkles size={13} /> AI coaching
+            </span>
+            <button className="coaching-note-reset" onClick={() => setPhase('idle')}>
+              Ask again
+            </button>
+          </div>
+          {note.status && <p className="coaching-note-status">{note.status}</p>}
+          {note.signal && (
+            <p className="coaching-note-row">
+              <span>Signal</span>
+              {note.signal}
+            </p>
+          )}
+          {note.action && (
+            <p className="coaching-note-row">
+              <span>Next step</span>
+              {note.action}
+            </p>
+          )}
         </div>
       )}
-      {status === 'error' && (
+      {phase === 'error' && (
         <div className="coaching-note-card glass coaching-note-card--error">
           Couldn't generate a suggestion right now ({error}). The score and signals above are unaffected.
         </div>

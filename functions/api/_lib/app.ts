@@ -204,8 +204,8 @@ app.post('/insight', async (c) => {
     return c.json({ error: 'invalid evidence payload' }, 400)
   }
   try {
-    const text = await generateCoachingNote(c.env.AI, evidence)
-    return c.json({ text })
+    const note = await generateCoachingNote(c.env.AI, evidence)
+    return c.json(note)
   } catch (err) {
     // The AI layer is an enhancement, never a dependency (Sprint 3/4's own
     // framing) — a failure here is reported as a normal error response, not
