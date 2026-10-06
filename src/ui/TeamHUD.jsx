@@ -13,6 +13,7 @@ import {
 import { useAppStore } from '../store/appStore'
 import { useTeamsStore, listTeams } from '../store/teamsStore'
 import { useSignalsStore } from '../store/signalsStore'
+import { useAuthStore } from '../store/authStore'
 import { getTeamWeek } from '../logic/teamHealth'
 import { levelFor } from '../logic/buildingStatus'
 import { SignalPill } from './SignalPill'
@@ -45,6 +46,7 @@ export default function TeamHUD() {
 
   const teams = useTeamsStore(useShallow(listTeams))
   const updateTeam = useTeamsStore((s) => s.updateTeam)
+  const readOnly = useAuthStore((s) => s.role) !== 'manager' // leadership can't edit teams
   // Subscribed purely so this re-renders once signals finish loading async
   // (getTeamWeek below reads the store imperatively, not reactively).
   const signalSource = useSignalsStore((s) => s.sourceByTeam[currentTeam])
@@ -155,7 +157,7 @@ export default function TeamHUD() {
                   </span>
                 )}
               </button>
-              {!isCompare && (
+              {!isCompare && !readOnly && (
                 <span className="hud-team-actions">
                   <button
                     className="hud-team-edit"
@@ -179,7 +181,7 @@ export default function TeamHUD() {
           )
         })}
 
-        {!isCompare && (
+        {!isCompare && !readOnly && (
           <button
             className={`hud-team-add${teamComposerOpen ? ' hud-team-add--open' : ''}`}
             onClick={toggleComposer}
@@ -190,7 +192,7 @@ export default function TeamHUD() {
           </button>
         )}
 
-        {!isCompare && (
+        {!isCompare && !readOnly && (
           <div
             className={`hud-team-composer-wrap${
               teamComposerOpen ? ' hud-team-composer-wrap--open' : ''
