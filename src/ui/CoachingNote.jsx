@@ -32,7 +32,8 @@ export default function CoachingNote({ teamId, weekHealth }) {
       setNote(result)
       setPhase('done')
     } catch (err) {
-      setError(err.message)
+      // The backend refuses coaching on demo/generated teams (no live data).
+      setError(err.message.includes('demo_data') ? 'demo' : err.message)
       setPhase('error')
     }
   }
@@ -81,7 +82,12 @@ export default function CoachingNote({ teamId, weekHealth }) {
           )}
         </div>
       )}
-      {phase === 'error' && (
+      {phase === 'error' && error === 'demo' && (
+        <div className="coaching-note-card glass coaching-note-card--error">
+          AI coaching needs a team with live data — this team is on demo data.
+        </div>
+      )}
+      {phase === 'error' && error !== 'demo' && (
         <div className="coaching-note-card glass coaching-note-card--error">
           Couldn't generate a suggestion right now ({error}). The score and signals above are unaffected.
         </div>

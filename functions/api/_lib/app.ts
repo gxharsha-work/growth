@@ -14,6 +14,7 @@ import { getSignalsForTeam } from './signals'
 import { generateCoachingNote, buildPrompt, type CoachingEvidence } from './coaching'
 import { buildEvidence } from './evidence'
 import { resolveUser, type AuthEnv, type AuthedUser } from './auth'
+import { checkCoachingRateLimit } from './ratelimit'
 
 type Env = AuthEnv & { AI: Ai }
 type Vars = { user: AuthedUser }
@@ -241,8 +242,26 @@ app.post('/insight', async (c) => {
   if (!body?.teamId || !Number.isInteger(body.week)) {
     return c.json({ error: 'teamId and week are required' }, 400)
   }
+
+  const limit = await checkCoachingRateLimit(c.env, c.get('user').email, body.teamId)
+  if (!limit.ok) {
+    const seconds = Math.ceil(limit.retryAfter / 1000)
+    return c.json(
+      { error: `rate limit reached (${limit.scope}); try again later` },
+      429,
+      { 'Retry-After': String(seconds) }
+    )
+  }
+
   const built = await buildEvidence(c.env.DB, body.teamId, body.week as number)
   if (!built) return c.json({ error: 'unknown team or week' }, 404)
+
+  // Coaching needs real ingested data. Hand-tuned demo teams and generated
+  // teams would have the AI narrate fabricated history (report §3.2), so only
+  // a team with live Jira signal is eligible.
+  if (built.source !== 'live') {
+    return c.json({ error: 'demo_data' }, 403)
+  }
 
   try {
     const note = await generateCoachingNote(c.env.AI, built.evidence)
