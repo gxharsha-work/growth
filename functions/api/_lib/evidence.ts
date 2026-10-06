@@ -87,6 +87,7 @@ export async function buildEvidence(
     trend: scores[index] - previousScore,
     earlyWarning: isEarlyWarning(scores, index),
     signals: aggregateSignals(current),
+    prevSignals: index > 0 ? aggregateSignals(weeks[index - 1]) : null,
     peer: await selectPeer(db, team, week),
   }
   return { evidence, source }

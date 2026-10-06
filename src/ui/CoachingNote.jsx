@@ -60,7 +60,7 @@ export default function CoachingNote({ teamId, weekHealth }) {
         <div className="coaching-note-card glass">
           <div className="coaching-note-head">
             <span className="coaching-note-label">
-              <Sparkles size={13} /> AI coaching
+              <Sparkles size={13} /> {note.source === 'template' ? 'Auto-generated note' : 'AI coaching'}
             </span>
             <button className="coaching-note-reset" onClick={() => setPhase('idle')}>
               Ask again
