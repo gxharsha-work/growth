@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Sparkles, TriangleAlert } from 'lucide-react'
 import { useTeamsStore } from '../store/teamsStore'
 import { api } from '../lib/api'
+import CoachAvatar from './CoachAvatar'
 import './coachingNote.css'
 
 // AI coaching suggestion — Sprint 3's documented-but-never-built stage 5
@@ -59,53 +60,69 @@ export default function CoachingNote({ teamId, weekHealth }) {
   return (
     <div className="coaching-note">
       {phase === 'idle' && (
-        <button
-          className={`coaching-note-trigger glass${weekHealth.earlyWarning ? ' coaching-note-trigger--warning' : ''}`}
-          onClick={handleClick}
-        >
-          {weekHealth.earlyWarning ? <TriangleAlert size={15} /> : <Sparkles size={15} />}
-          Get AI coaching suggestion
-        </button>
+        <div className="coach-speech">
+          <CoachAvatar mood={weekHealth.earlyWarning ? 'concerned' : 'happy'} />
+          <button
+            className={`coach-bubble coach-bubble--trigger glass${weekHealth.earlyWarning ? ' coach-bubble--warning' : ''}`}
+            onClick={handleClick}
+          >
+            {weekHealth.earlyWarning ? <TriangleAlert size={14} /> : <Sparkles size={14} />}
+            Get AI coaching suggestion
+          </button>
+        </div>
       )}
       {phase === 'loading' && (
-        <div className="coaching-note-card glass coaching-note-card--loading">
-          <Sparkles size={15} className="coaching-note-spin" />
-          Thinking it through...
+        <div className="coach-speech">
+          <CoachAvatar mood="thinking" />
+          <div className="coach-bubble glass coach-bubble--loading">
+            <span>Thinking it through</span>
+            <span className="coach-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </div>
         </div>
       )}
       {phase === 'done' && note && (
-        <div className="coaching-note-card glass">
-          <div className="coaching-note-head">
-            <span className="coaching-note-label">
-              <Sparkles size={13} /> {note.source === 'template' ? 'Auto-generated note' : 'AI coaching'}
-            </span>
-            <button className="coaching-note-reset" onClick={() => setPhase('idle')}>
-              Ask again
+        <div className="coach-speech">
+          <CoachAvatar mood={weekHealth.earlyWarning ? 'concerned' : 'happy'} />
+          <div className="coach-bubble glass">
+            <div className="coaching-note-head">
+              <span className="coaching-note-label">
+                <Sparkles size={12} /> {note.source === 'template' ? 'Auto-generated note' : 'AI coaching'}
+              </span>
+              <button className="coaching-note-reset" onClick={() => setPhase('idle')}>
+                Ask again
+              </button>
+            </div>
+            {note.status && <p className="coaching-note-status">{note.status}</p>}
+            {note.signal && (
+              <p className="coaching-note-row">
+                <span>Signal</span>
+                {note.signal}
+              </p>
+            )}
+            {note.action && (
+              <p className="coaching-note-row">
+                <span>Next step</span>
+                {note.action}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      {phase === 'error' && (
+        <div className="coach-speech">
+          <CoachAvatar mood="concerned" />
+          <div className="coach-bubble glass coach-bubble--error">
+            {error === 'demo'
+              ? 'AI coaching needs a team with live data — this team is on demo data.'
+              : `Couldn't generate a suggestion right now (${error}). The score and signals above are unaffected.`}
+            <button className="coaching-note-reset coach-bubble-retry" onClick={() => setPhase('idle')}>
+              Try again
             </button>
           </div>
-          {note.status && <p className="coaching-note-status">{note.status}</p>}
-          {note.signal && (
-            <p className="coaching-note-row">
-              <span>Signal</span>
-              {note.signal}
-            </p>
-          )}
-          {note.action && (
-            <p className="coaching-note-row">
-              <span>Next step</span>
-              {note.action}
-            </p>
-          )}
-        </div>
-      )}
-      {phase === 'error' && error === 'demo' && (
-        <div className="coaching-note-card glass coaching-note-card--error">
-          AI coaching needs a team with live data — this team is on demo data.
-        </div>
-      )}
-      {phase === 'error' && error !== 'demo' && (
-        <div className="coaching-note-card glass coaching-note-card--error">
-          Couldn't generate a suggestion right now ({error}). The score and signals above are unaffected.
         </div>
       )}
     </div>
