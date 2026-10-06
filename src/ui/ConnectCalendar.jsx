@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link2 } from 'lucide-react'
 import { getCurrentWeekWindow, classifyEvent } from '../logic/meetingLoad'
-import { SignalPill, CalendarDetailsList } from './SignalPill'
+import { SignalPill } from './SignalPill'
 
 // Lightweight, session-only "connect your own Google Calendar" preview.
 // Uses Google Identity Services' client-side OAuth token flow (a popup,
@@ -58,9 +58,8 @@ async function fetchThisWeeksEvents(accessToken) {
 
 export default function ConnectCalendar() {
   const [status, setStatus] = useState('idle') // idle | loading-gis | connecting | connected | error
-  const [result, setResult] = useState(null) // { avgMeetingHoursPerWeek, details }
+  const [result, setResult] = useState(null) // { avgMeetingHoursPerWeek }
   const [errorMessage, setErrorMessage] = useState('')
-  const [expanded, setExpanded] = useState(false)
   const [gisReady, setGisReady] = useState(false)
 
   // Preload the GIS script on mount rather than on click: requestAccessToken()
@@ -101,17 +100,14 @@ export default function ConnectCalendar() {
           }
           try {
             const events = await fetchThisWeeksEvents(tokenResponse.access_token)
+            // Only the total is kept — event titles never leave the browser or
+            // get surfaced in the UI.
             let totalHours = 0
-            const details = events.map((event) => {
+            for (const event of events) {
               const classified = classifyEvent(event)
-              const title = event.summary ?? '(untitled)'
-              if (classified.include) {
-                totalHours += classified.hours
-                return { title, hours: Math.round(classified.hours * 10) / 10, included: true, reason: null }
-              }
-              return { title, hours: null, included: false, reason: classified.reason }
-            })
-            setResult({ avgMeetingHoursPerWeek: Math.round(totalHours * 10) / 10, details })
+              if (classified.include) totalHours += classified.hours
+            }
+            setResult({ avgMeetingHoursPerWeek: Math.round(totalHours * 10) / 10 })
             setStatus('connected')
           } catch (err) {
             setStatus('error')
@@ -130,11 +126,7 @@ export default function ConnectCalendar() {
     return (
       <SignalPill
         icon={<Link2 size={15} />}
-        label={`Your calendar: ${result.avgMeetingHoursPerWeek}h this week`}
-        details={result.details}
-        renderDetails={(d) => <CalendarDetailsList details={d} />}
-        expanded={expanded}
-        onToggle={() => setExpanded((e) => !e)}
+        label={`Your calendar: ${result.avgMeetingHoursPerWeek}h this week (only you see this)`}
       />
     )
   }

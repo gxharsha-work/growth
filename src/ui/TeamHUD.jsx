@@ -15,7 +15,7 @@ import { useTeamsStore, listTeams } from '../store/teamsStore'
 import { useSignalsStore } from '../store/signalsStore'
 import { getTeamWeek } from '../logic/teamHealth'
 import { levelFor } from '../logic/buildingStatus'
-import { SignalPill, JiraDetailsList, CalendarDetailsList } from './SignalPill'
+import { SignalPill } from './SignalPill'
 import ConnectCalendar from './ConnectCalendar'
 import CoachingNote from './CoachingNote'
 import './hud.css'
@@ -43,7 +43,6 @@ export default function TeamHUD() {
   // (getTeamWeek below reads the store imperatively, not reactively).
   const signalSource = useSignalsStore((s) => s.sourceByTeam[currentTeam])
 
-  const [expandedSignal, setExpandedSignal] = useState(null) // 'jira' | 'calendar' | null
   const [editingId, setEditingId] = useState(null) // null = create mode
   const [name, setName] = useState('')
   const [sizeBucket, setSizeBucket] = useState('')
@@ -68,10 +67,6 @@ export default function TeamHUD() {
     const timer = setTimeout(() => setConfirmDeleteId(null), 2600)
     return () => clearTimeout(timer)
   }, [confirmDeleteId])
-
-  function toggleSignal(signal) {
-    setExpandedSignal((current) => (current === signal ? null : signal))
-  }
 
   function closeComposer() {
     closeTeamComposer()
@@ -289,10 +284,6 @@ export default function TeamHUD() {
         <SignalPill
           icon={<Ticket size={15} />}
           label={`Jira: ${weekHealth.signals.jira.avgCycleTimeDays}d cycle · ${weekHealth.signals.jira.sprintCompletionPct}% sprint`}
-          details={weekHealth.signals.jira.details}
-          renderDetails={(d) => <JiraDetailsList details={d} />}
-          expanded={expandedSignal === 'jira'}
-          onToggle={() => toggleSignal('jira')}
         />
       )}
 
@@ -300,15 +291,11 @@ export default function TeamHUD() {
         <SignalPill
           icon={<CalendarDays size={15} />}
           label={`Meeting load: ${weekHealth.signals.calendar.avgMeetingHoursPerWeek}h this week`}
-          details={weekHealth.signals.calendar.details}
-          renderDetails={(d) => <CalendarDetailsList details={d} />}
-          expanded={expandedSignal === 'calendar'}
-          onToggle={() => toggleSignal('calendar')}
         />
       )}
 
       {!isCompare && weekHealth && (
-        <CoachingNote teamId={currentTeam} currentWeek={currentWeek} weekHealth={weekHealth} />
+        <CoachingNote teamId={currentTeam} weekHealth={weekHealth} />
       )}
 
       {!isCompare && <ConnectCalendar />}

@@ -93,7 +93,7 @@ export function buildPrompt(ev: CoachingEvidence): string {
     lines.push(
       '',
       `Anonymized peer comparison (a team in the same size/function cohort, this week):`,
-      `- ${ev.peer.name.replace(/team/i, 'Peer Team')}: ${peerParts}`
+      `- ${ev.peer.name}: ${peerParts}`
     )
   }
   return lines.join('\n')
