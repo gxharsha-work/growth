@@ -421,6 +421,33 @@
   word-break: break-word;
 }
 
+/* provenance tag on a signal pill */
+.hud-source-tag {
+  flex: none;
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.hud-source-tag--live {
+  color: var(--good);
+  background: rgba(31, 157, 104, 0.14);
+}
+
+.hud-source-tag--placeholder {
+  color: #a86f00;
+  background: rgba(221, 154, 18, 0.16);
+}
+
+.hud-source-tag--demo {
+  color: var(--ink-3);
+  background: var(--wash);
+}
+
 /* ---------- compare toggle ---------- */
 .hud-compare-toggle {
   display: flex;

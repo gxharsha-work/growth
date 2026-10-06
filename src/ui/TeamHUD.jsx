@@ -23,6 +23,12 @@ import './hud.css'
 const RING_RADIUS = 24
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS
 
+// Provenance tag shown on a signal pill: where this week's number came from.
+function SourceTag({ state }) {
+  if (!state) return null
+  return <span className={`hud-source-tag hud-source-tag--${state}`}>{state}</span>
+}
+
 export default function TeamHUD() {
   const currentTeam = useAppStore((s) => s.currentTeam)
   const currentWeek = useAppStore((s) => s.currentWeek)
@@ -274,16 +280,11 @@ export default function TeamHUD() {
         </div>
       )}
 
-      {!isCompare && weekHealth && signalSource === 'generated' && (
-        <div className="hud-signal hud-signal--muted glass">
-          Demo data — no live integration connected yet
-        </div>
-      )}
-
       {!isCompare && weekHealth && (
         <SignalPill
           icon={<Ticket size={15} />}
           label={`Jira: ${weekHealth.signals.jira.avgCycleTimeDays}d cycle · ${weekHealth.signals.jira.sprintCompletionPct}% sprint`}
+          tag={<SourceTag state={weekHealth.sources?.jira} />}
         />
       )}
 
@@ -291,11 +292,18 @@ export default function TeamHUD() {
         <SignalPill
           icon={<CalendarDays size={15} />}
           label={`Meeting load: ${weekHealth.signals.calendar.avgMeetingHoursPerWeek}h this week`}
+          tag={<SourceTag state={weekHealth.sources?.calendar} />}
         />
       )}
 
-      {!isCompare && weekHealth && (
+      {/* Coaching is only meaningful on live data; demo/generated teams show why. */}
+      {!isCompare && weekHealth && signalSource === 'live' && (
         <CoachingNote teamId={currentTeam} weekHealth={weekHealth} />
+      )}
+      {!isCompare && weekHealth && signalSource && signalSource !== 'live' && (
+        <div className="hud-signal hud-signal--muted glass">
+          AI coaching needs a team with live data (this team is {signalSource === 'generated' ? 'demo' : 'sample'} data).
+        </div>
       )}
 
       {!isCompare && <ConnectCalendar />}

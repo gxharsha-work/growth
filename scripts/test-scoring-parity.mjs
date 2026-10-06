@@ -53,29 +53,50 @@ const fixtures = {
   ),
 }
 
+// Provenance variants exercised for every fixture: no sources (back-compat),
+// all demo (no rescale), and live-with-placeholder-GitHub (the rescale path
+// that moves a live team's score).
+const LIVE_SOURCES = { jira: 'live', github: 'placeholder', calendar: 'live' }
+const DEMO_SOURCES = { jira: 'demo', github: 'demo', calendar: 'demo' }
+const VARIANTS = [
+  { name: 'no-sources', sources: undefined },
+  { name: 'all-demo', sources: DEMO_SOURCES },
+  { name: 'live+placeholder-github', sources: LIVE_SOURCES },
+]
+
 let failures = 0
 for (const [teamId, weeks] of Object.entries(fixtures)) {
-  const clientScores = weeks.map((w) => client.computeHealthScore(w))
-  const serverScores = weeks.map((w) => server.computeHealthScore(w))
-  const clientCap = weeks.map((w) => client.computeCapabilityScore(w))
-  const serverCap = weeks.map((w) => server.computeCapabilityScore(w))
-  const clientWarn = weeks.map((_, i) => client.isEarlyWarning(clientScores, i))
-  const serverWarn = weeks.map((_, i) => server.isEarlyWarning(serverScores, i))
+  for (const variant of VARIANTS) {
+    const s = variant.sources
+    const clientScores = weeks.map((w) => client.computeHealthScore(w, s))
+    const serverScores = weeks.map((w) => server.computeHealthScore(w, s))
+    const clientWarn = weeks.map((_, i) => client.isEarlyWarning(clientScores, i))
+    const serverWarn = weeks.map((_, i) => server.isEarlyWarning(serverScores, i))
 
-  const same =
-    JSON.stringify(clientScores) === JSON.stringify(serverScores) &&
-    JSON.stringify(clientCap) === JSON.stringify(serverCap) &&
-    JSON.stringify(clientWarn) === JSON.stringify(serverWarn)
+    const same =
+      JSON.stringify(clientScores) === JSON.stringify(serverScores) &&
+      JSON.stringify(clientWarn) === JSON.stringify(serverWarn)
 
-  if (!same) {
-    failures++
-    console.log(`FAIL ${teamId}`)
-    console.log('  client score', clientScores)
-    console.log('  server score', serverScores)
-  } else {
-    console.log(`PASS ${teamId}  scores ${serverScores.join(',')}`)
+    if (!same) {
+      failures++
+      console.log(`FAIL ${teamId} [${variant.name}]`)
+      console.log('  client', clientScores)
+      console.log('  server', serverScores)
+    } else {
+      console.log(`PASS ${teamId} [${variant.name}]  ${serverScores.join(',')}`)
+    }
   }
 }
 
-console.log(failures === 0 ? '\nParity OK: server and browser scorers agree.' : `\n${failures} team(s) differ`)
+// Capability score has no provenance rescale; check parity on its own.
+for (const [teamId, weeks] of Object.entries(fixtures)) {
+  const c = weeks.map((w) => client.computeCapabilityScore(w))
+  const srv = weeks.map((w) => server.computeCapabilityScore(w))
+  if (JSON.stringify(c) !== JSON.stringify(srv)) {
+    failures++
+    console.log(`FAIL ${teamId} [capability]`, c, srv)
+  }
+}
+
+console.log(failures === 0 ? '\nParity OK: server and browser scorers agree.' : `\n${failures} case(s) differ`)
 process.exit(failures ? 1 : 0)

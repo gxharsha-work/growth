@@ -6,7 +6,7 @@
 // Kept line-for-line with the client on purpose. Changing the math (e.g.
 // rescaling weights when a source is missing) happens in both places together.
 
-import type { WeekSignals } from './signals'
+import type { WeekSignals, WeekSources, SourceState } from './signals'
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -42,13 +42,27 @@ export const normalizeAfterHoursCommits = (pct: number) =>
 export const normalizeMeetingLoad = (hours: number) =>
   scoreLowerIsBetter(hours, THRESHOLDS.meetingHoursPerWeek.good, THRESHOLDS.meetingHoursPerWeek.bad)
 
-export function computeHealthScore(w: WeekSignals): number {
-  const composite =
-    normalizeCycleTime(w.jira.avgCycleTimeDays) * WEIGHTS.cycleTime +
-    normalizeCompletion(w.jira.sprintCompletionPct) * WEIGHTS.completion +
-    normalizeReviewTurnaround(w.github.avgReviewTurnaroundHours) * WEIGHTS.reviewTurnaround +
-    normalizeAfterHoursCommits(w.github.pctCommitsAfter7pm) * WEIGHTS.afterHoursCommits +
-    normalizeMeetingLoad(w.calendar.avgMeetingHoursPerWeek) * WEIGHTS.meetingLoad
+// A term counts toward the score unless its source is a placeholder (or
+// absent). An unconnected integration therefore drops out and the remaining
+// weights are rescaled, rather than a fixed stand-in distorting the number.
+function included(src: SourceState | undefined): boolean {
+  return src === 'live' || src === 'demo'
+}
+
+// `sources` is optional for back-compat: omitted means "count everything"
+// (the weights already sum to 1, so the result is identical to the old math).
+export function computeHealthScore(w: WeekSignals, sources?: WeekSources): number {
+  const terms = [
+    { norm: normalizeCycleTime(w.jira.avgCycleTimeDays), weight: WEIGHTS.cycleTime, src: sources?.jira },
+    { norm: normalizeCompletion(w.jira.sprintCompletionPct), weight: WEIGHTS.completion, src: sources?.jira },
+    { norm: normalizeReviewTurnaround(w.github.avgReviewTurnaroundHours), weight: WEIGHTS.reviewTurnaround, src: sources?.github },
+    { norm: normalizeAfterHoursCommits(w.github.pctCommitsAfter7pm), weight: WEIGHTS.afterHoursCommits, src: sources?.github },
+    { norm: normalizeMeetingLoad(w.calendar.avgMeetingHoursPerWeek), weight: WEIGHTS.meetingLoad, src: sources?.calendar },
+  ]
+  const active = sources ? terms.filter((t) => included(t.src)) : terms
+  const totalWeight = active.reduce((s, t) => s + t.weight, 0)
+  if (totalWeight === 0) return 0
+  const composite = active.reduce((s, t) => s + t.norm * t.weight, 0) / totalWeight
   return Math.round(clamp(composite, 0, 100))
 }
 

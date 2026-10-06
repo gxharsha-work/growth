@@ -71,6 +71,14 @@ export const WEEK_COUNT = 8
 const PENDING_GITHUB = { prCount: 0, avgReviewTurnaroundHours: 12, pctCommitsAfter7pm: 15 }
 const PENDING_CALENDAR = { avgMeetingHoursPerWeek: 6 }
 
+// Per-week provenance (must match functions/api/_lib/signals.ts). A
+// 'placeholder' source is excluded from the score; 'demo'/'live' count.
+const DEMO_SOURCES = { jira: 'demo', github: 'demo', calendar: 'demo' }
+
+function withSources(weeks, sources) {
+  return weeks.map((w) => ({ ...w, sources }))
+}
+
 // Jira and calendar ingestion run independently (different days, different
 // cadences), so merge by `isoWeek` rather than trusting each file's stored
 // `week` index — that keeps the two sources from drifting out of sync.
@@ -91,6 +99,11 @@ const liveTeams = Object.fromEntries(
       jira: jiraByWeek.get(isoWeek),
       github: PENDING_GITHUB,
       calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
+      sources: {
+        jira: 'live',
+        github: 'placeholder',
+        calendar: calendarByWeek.has(isoWeek) ? 'live' : 'placeholder',
+      },
     }))
 
     return [teamId, weeks]
@@ -118,7 +131,7 @@ export function getSignalSource(teamId) {
 // stays safe without needing any invalidation logic.
 export function getWeeklySignalsForTeam(teamId) {
   if (!teamId) return []
-  if (HAND_TUNED[teamId]) return HAND_TUNED[teamId]
-  if (liveTeams[teamId]) return liveTeams[teamId]
-  return buildWeeks(generateWeeklyRows(teamId))
+  if (HAND_TUNED[teamId]) return withSources(HAND_TUNED[teamId], DEMO_SOURCES)
+  if (liveTeams[teamId]) return liveTeams[teamId] // already carry per-week sources
+  return withSources(buildWeeks(generateWeeklyRows(teamId)), DEMO_SOURCES)
 }

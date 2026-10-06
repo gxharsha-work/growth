@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Sparkles, TriangleAlert } from 'lucide-react'
 import { useTeamsStore } from '../store/teamsStore'
 import { api } from '../lib/api'
@@ -23,15 +23,31 @@ export default function CoachingNote({ teamId, weekHealth }) {
   const [error, setError] = useState('')
   const team = useTeamsStore((s) => s.teams[teamId])
 
+  // A note belongs to one team+week. Switching either clears it, and a reply
+  // that arrives after the switch is discarded — so an old team's note can
+  // never show under a new team/week (report §3.3 stale-note bugs).
+  const key = `${teamId}:${weekHealth?.week}`
+  const keyRef = useRef(key)
+
+  useEffect(() => {
+    keyRef.current = key
+    setPhase('idle')
+    setNote(null)
+    setError('')
+  }, [key])
+
   async function handleClick() {
+    const requestKey = key
     setPhase('loading')
     setError('')
     try {
       // The server computes score, trend, signals, and peer from { teamId, week }.
       const result = await api.post('/insight', { teamId, week: weekHealth.week })
+      if (keyRef.current !== requestKey) return // team/week changed mid-flight
       setNote(result)
       setPhase('done')
     } catch (err) {
+      if (keyRef.current !== requestKey) return
       // The backend refuses coaching on demo/generated teams (no live data).
       setError(err.message.includes('demo_data') ? 'demo' : err.message)
       setPhase('error')

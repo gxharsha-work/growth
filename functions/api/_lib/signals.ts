@@ -17,7 +17,19 @@ export const WEEK_COUNT = 8
 type JiraSignal = { issueCount: number; avgCycleTimeDays: number; sprintCompletionPct: number; details?: unknown[] }
 type GithubSignal = { prCount: number; avgReviewTurnaroundHours: number; pctCommitsAfter7pm: number }
 type CalendarSignal = { avgMeetingHoursPerWeek: number; details?: unknown[] }
-export type WeekSignals = { week: number; jira: JiraSignal; github: GithubSignal; calendar: CalendarSignal }
+
+// Where each source's numbers came from this week:
+//   live        = ingested from the real integration
+//   placeholder = a fixed stand-in (e.g. GitHub isn't connected yet)
+//   demo        = hand-tuned or generated sample data
+// A 'placeholder' source is excluded from the score and its weight rescaled
+// (see scoring.ts), so an unconnected integration can't quietly distort the
+// number (report §3.2).
+export type SourceState = 'live' | 'placeholder' | 'demo'
+export type WeekSources = { jira: SourceState; github: SourceState; calendar: SourceState }
+export type WeekSignals = { week: number; jira: JiraSignal; github: GithubSignal; calendar: CalendarSignal; sources?: WeekSources }
+
+const DEMO_SOURCES: WeekSources = { jira: 'demo', github: 'demo', calendar: 'demo' }
 
 // [issueCount, avgCycleTimeDays, sprintCompletionPct, prCount,
 //  avgReviewTurnaroundHours, pctCommitsAfter7pm, avgMeetingHoursPerWeek]
@@ -138,12 +150,20 @@ function mergeIngestedRows(rows: Row[]): WeekSignals[] {
   }
   return [...jiraByWeek.keys()]
     .sort()
-    .map((isoWeek, i) => ({
-      week: i + 1,
-      jira: jiraByWeek.get(isoWeek)!,
-      github: PENDING_GITHUB,
-      calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
-    }))
+    .map((isoWeek, i) => {
+      const hasCalendar = calendarByWeek.has(isoWeek)
+      return {
+        week: i + 1,
+        jira: jiraByWeek.get(isoWeek)!,
+        github: PENDING_GITHUB, // GitHub isn't connected yet — a placeholder
+        calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
+        sources: {
+          jira: 'live',
+          github: 'placeholder',
+          calendar: hasCalendar ? 'live' : 'placeholder',
+        } as WeekSources,
+      }
+    })
 }
 
 export type SignalSource = 'hand-tuned' | 'live' | 'generated'
@@ -153,7 +173,7 @@ export async function getSignalsForTeam(
   teamId: string
 ): Promise<{ weeks: WeekSignals[]; source: SignalSource }> {
   if (HAND_TUNED_IDS.has(teamId)) {
-    return { weeks: HAND_TUNED[teamId], source: 'hand-tuned' }
+    return { weeks: HAND_TUNED[teamId].map((w) => ({ ...w, sources: DEMO_SOURCES })), source: 'hand-tuned' }
   }
 
   const { results } = await db
@@ -166,5 +186,8 @@ export async function getSignalsForTeam(
     if (weeks.length > 0) return { weeks, source: 'live' }
   }
 
-  return { weeks: buildWeeks(generateWeeklyRows(teamId)), source: 'generated' }
+  return {
+    weeks: buildWeeks(generateWeeklyRows(teamId)).map((w) => ({ ...w, sources: DEMO_SOURCES })),
+    source: 'generated',
+  }
 }

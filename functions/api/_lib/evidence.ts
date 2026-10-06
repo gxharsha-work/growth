@@ -48,7 +48,7 @@ async function selectPeer(
     if (source === 'generated') continue
     const peerWeek = weeks[week - 1]
     if (!peerWeek) continue
-    const scores = weeks.map(computeHealthScore)
+    const scores = weeks.map((w) => computeHealthScore(w, w.sources))
     return {
       name: peerAlias(team.id, candidate.id),
       score: scores[week - 1],
@@ -72,7 +72,7 @@ export async function buildEvidence(
   const { weeks, source } = await getSignalsForTeam(db, teamId)
   if (!Number.isInteger(week) || week < 1 || week > weeks.length) return null
 
-  const scores = weeks.map(computeHealthScore)
+  const scores = weeks.map((w) => computeHealthScore(w, w.sources))
   const index = week - 1
   const current = weeks[index]
   const previousScore = index > 0 ? scores[index - 1] : scores[index]
