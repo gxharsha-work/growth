@@ -14,9 +14,16 @@
 
 export const WEEK_COUNT = 8
 
-type JiraSignal = { issueCount: number; avgCycleTimeDays: number; sprintCompletionPct: number; details?: unknown[] }
+type SprintMeta = { id: number; name: string; state: string; startDate: string | null; endDate: string | null }
+type JiraSignal = { issueCount: number; avgCycleTimeDays: number; sprintCompletionPct: number; details?: unknown[]; sprint?: SprintMeta }
 type GithubSignal = { prCount: number; avgReviewTurnaroundHours: number; pctCommitsAfter7pm: number }
 type CalendarSignal = { avgMeetingHoursPerWeek: number; details?: unknown[] }
+
+// How a row's time bucket is labelled: a real sprint window, or (legacy data)
+// a plain ISO calendar week. See src/data/sprintAlign.js — keep in sync.
+export type Period =
+  | { kind: 'sprint'; name: string; state: string; startDate: string | null; endDate: string | null }
+  | { kind: 'week'; isoWeek: string }
 
 // Where each source's numbers came from this week:
 //   live        = ingested from the real integration
@@ -27,7 +34,7 @@ type CalendarSignal = { avgMeetingHoursPerWeek: number; details?: unknown[] }
 // number (report §3.2).
 export type SourceState = 'live' | 'placeholder' | 'demo'
 export type WeekSources = { jira: SourceState; github: SourceState; calendar: SourceState }
-export type WeekSignals = { week: number; jira: JiraSignal; github: GithubSignal; calendar: CalendarSignal; sources?: WeekSources }
+export type WeekSignals = { week: number; period?: Period; jira: JiraSignal; github: GithubSignal; calendar: CalendarSignal; sources?: WeekSources }
 
 const DEMO_SOURCES: WeekSources = { jira: 'demo', github: 'demo', calendar: 'demo' }
 
@@ -137,10 +144,76 @@ const PENDING_CALENDAR: CalendarSignal = { avgMeetingHoursPerWeek: 6 }
 
 type Row = { iso_week: string; source: string; payload: string }
 
-// Merges D1's per-(week, source) rows into the weekly array shape the
-// frontend has always consumed. Jira is the anchor signal (a week with
-// calendar data but no jira data has nothing to show — healthScore.js
-// requires signals.jira), matching mockSignals.js's original merge rule.
+// --- sprint-boundary alignment (TS port of src/data/sprintAlign.js) ---
+// Thursday of an ISO week (YYYY-Www) in epoch ms, used to assign each calendar
+// week to exactly one sprint window. NaN for a malformed label.
+function isoWeekThursdayMs(isoWeek: string): number {
+  const m = /^(\d{4})-W(\d{2})$/.exec(isoWeek ?? '')
+  if (!m) return NaN
+  const year = Number(m[1])
+  const week = Number(m[2])
+  const jan4 = new Date(Date.UTC(year, 0, 4))
+  const jan4Dow = jan4.getUTCDay() || 7
+  const thursday = new Date(jan4)
+  thursday.setUTCDate(jan4.getUTCDate() - (jan4Dow - 4) + (week - 1) * 7)
+  return thursday.getTime()
+}
+
+type SprintRow = { sprint: SprintMeta; jira: JiraSignal }
+type CalRow = { isoWeek: string; calendar: CalendarSignal }
+type AlignedRow = { week: number; period: Period; jira: JiraSignal; calendar: CalendarSignal | null; hasCalendar: boolean }
+
+function buildSprintRows(jiraRows: SprintRow[], calendarRows: CalRow[]): AlignedRow[] {
+  const startMs = (s: SprintMeta) => {
+    const t = Date.parse(s.startDate ?? '')
+    return Number.isFinite(t) ? t : 0
+  }
+  const endMs = (s: SprintMeta) => {
+    const t = Date.parse(s.endDate ?? '')
+    return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY
+  }
+  return [...jiraRows]
+    .sort((a, b) => startMs(a.sprint) - startMs(b.sprint))
+    .map((row, i) => {
+      const lo = startMs(row.sprint)
+      const hi = endMs(row.sprint)
+      const inWindow = calendarRows.filter((c) => {
+        const t = isoWeekThursdayMs(c.isoWeek)
+        return Number.isFinite(t) && t >= lo && t <= hi
+      })
+      const calendar = inWindow.length
+        ? {
+            avgMeetingHoursPerWeek:
+              Math.round(
+                (inWindow.reduce((s, c) => s + (c.calendar?.avgMeetingHoursPerWeek ?? 0), 0) /
+                  inWindow.length) *
+                  10
+              ) / 10,
+          }
+        : null
+      return {
+        week: i + 1,
+        period: {
+          kind: 'sprint',
+          name: row.sprint.name,
+          state: row.sprint.state,
+          startDate: row.sprint.startDate,
+          endDate: row.sprint.endDate,
+        } as Period,
+        jira: row.jira,
+        calendar,
+        hasCalendar: inWindow.length > 0,
+      }
+    })
+}
+
+// Merges D1's per-(week, source) rows into the array shape the frontend has
+// always consumed. Jira is the anchor signal (a bucket with calendar data but
+// no jira data has nothing to show — healthScore.js requires signals.jira).
+// When the Jira payloads carry sprint metadata (current worker-ingestion), the
+// rows are aligned to sprint boundaries and the weekly calendar rows fold into
+// each sprint window; otherwise it falls back to the legacy ISO-week join so
+// older rows still merge. Keep in sync with src/data/mockSignals.js.
 function mergeIngestedRows(rows: Row[]): WeekSignals[] {
   const jiraByWeek = new Map<string, JiraSignal>()
   const calendarByWeek = new Map<string, CalendarSignal>()
@@ -148,12 +221,40 @@ function mergeIngestedRows(rows: Row[]): WeekSignals[] {
     if (r.source === 'jira') jiraByWeek.set(r.iso_week, JSON.parse(r.payload))
     if (r.source === 'calendar') calendarByWeek.set(r.iso_week, JSON.parse(r.payload))
   }
+
+  const jiraPayloads = [...jiraByWeek.values()]
+  const useSprints = jiraPayloads.length > 0 && jiraPayloads.every((j) => j.sprint)
+
+  if (useSprints) {
+    // One row per sprint (dedupe if several ISO-week keys map to the same sprint).
+    const bySprint = new Map<number, JiraSignal>()
+    for (const j of jiraPayloads) bySprint.set(j.sprint!.id, j)
+    const jiraRows: SprintRow[] = [...bySprint.values()].map((j) => {
+      const { sprint, ...jira } = j
+      return { sprint: sprint!, jira }
+    })
+    const calendarRows: CalRow[] = [...calendarByWeek.entries()].map(([isoWeek, calendar]) => ({ isoWeek, calendar }))
+    return buildSprintRows(jiraRows, calendarRows).map((r) => ({
+      week: r.week,
+      period: r.period,
+      jira: r.jira,
+      github: PENDING_GITHUB,
+      calendar: r.calendar ?? PENDING_CALENDAR,
+      sources: {
+        jira: 'live',
+        github: 'placeholder',
+        calendar: r.hasCalendar ? 'live' : 'placeholder',
+      } as WeekSources,
+    }))
+  }
+
   return [...jiraByWeek.keys()]
     .sort()
     .map((isoWeek, i) => {
       const hasCalendar = calendarByWeek.has(isoWeek)
       return {
         week: i + 1,
+        period: { kind: 'week', isoWeek } as Period,
         jira: jiraByWeek.get(isoWeek)!,
         github: PENDING_GITHUB, // GitHub isn't connected yet — a placeholder
         calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,

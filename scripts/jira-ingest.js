@@ -6,13 +6,14 @@
 // token and blocks cross-origin browser requests. Run via:
 //   npm run ingest:jira
 //
-// Only produces { week, jira: { issueCount, avgCycleTimeDays,
-// sprintCompletionPct } } rows — no scoring math. healthScore.js /
-// teamHealth.js consume that shape unchanged.
+// Produces one row per real sprint, aligned to the sprint's own boundaries:
+//   { week, sprint: { id, name, state, startDate, endDate },
+//     jira: { issueCount, avgCycleTimeDays, sprintCompletionPct, details } }
+// No scoring math here. mockSignals.js folds the weekly calendar rows into
+// each sprint window (see sprintAlign.js); healthScore.js is unchanged.
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { getIsoWeek } from './lib/iso-week.js'
 
 const TEAM_ID = 'solstice'
 const BOARD_ID = 1
@@ -51,13 +52,34 @@ async function fetchJson(path) {
   return res.json()
 }
 
-async function getActiveSprintId() {
-  const data = await fetchJson(
-    `/rest/agile/1.0/board/${BOARD_ID}/sprint?state=active`
-  )
-  const sprint = data.values?.[0]
-  if (!sprint) throw new Error('No active sprint found on board ' + BOARD_ID)
-  return sprint.id
+// Every sprint on the board with real boundaries (closed + active), oldest
+// first. Metrics are then computed per sprint and aligned to these windows —
+// instead of the old behaviour of pulling only the active sprint and stamping
+// it with whatever ISO calendar week the script happened to run in.
+async function getAllSprints() {
+  const sprints = []
+  let startAt = 0
+  for (;;) {
+    const data = await fetchJson(
+      `/rest/agile/1.0/board/${BOARD_ID}/sprint?state=closed,active&startAt=${startAt}&maxResults=50`
+    )
+    for (const s of data.values ?? []) {
+      sprints.push({
+        id: s.id,
+        name: s.name,
+        state: s.state,
+        startDate: s.startDate ?? null,
+        endDate: s.endDate ?? null,
+        completeDate: s.completeDate ?? null,
+      })
+    }
+    if (data.isLast || !(data.values?.length)) break
+    startAt += data.values.length
+  }
+  if (!sprints.length) throw new Error('No sprints found on board ' + BOARD_ID)
+  // Sort by start date so the emitted rows read oldest -> newest.
+  sprints.sort((a, b) => Date.parse(a.startDate ?? 0) - Date.parse(b.startDate ?? 0))
+  return sprints
 }
 
 async function getSprintIssues(sprintId) {
@@ -111,10 +133,11 @@ async function computeCycleTimeDays(issueKey) {
   return { key: issueKey, include: false, reason: 'never entered In Progress/Testing' }
 }
 
-async function main() {
-  const sprintId = await getActiveSprintId()
-  const issues = await getSprintIssues(sprintId)
-
+// Aggregate one sprint's issues into the { issueCount, avgCycleTimeDays,
+// sprintCompletionPct, details } shape the app consumes. `active` only affects
+// the diagnostic wording (an active sprint's completion is a mid-flight
+// snapshot; a closed sprint's is final).
+async function computeSprintJira(sprint, issues) {
   const issueCount = issues.length
   const doneCount = issues.filter(
     (i) => i.fields.status.statusCategory.key === 'done'
@@ -123,12 +146,16 @@ async function main() {
     ? Math.round((100 * doneCount) / issueCount)
     : 0
 
-  console.log(`Sprint ${sprintId} issues (${issueCount} total, ${doneCount} counted as done):`)
+  console.log(
+    `\nSprint ${sprint.id} "${sprint.name}" [${sprint.state}] ` +
+      `${sprint.startDate?.slice(0, 10) ?? '?'}→${sprint.endDate?.slice(0, 10) ?? '?'} ` +
+      `(${issueCount} issues, ${doneCount} done):`
+  )
   for (const issue of issues) {
     const done = issue.fields.status.statusCategory.key === 'done'
     console.log(
-      `  ${issue.key} "${issue.fields.summary}" — status: ${issue.fields.status.name}` +
-        (done ? ' ✓ counts toward sprintCompletionPct' : '')
+      `  ${issue.key} "${issue.fields.summary}" — ${issue.fields.status.name}` +
+        (done ? ' ✓' : '')
     )
   }
 
@@ -138,9 +165,8 @@ async function main() {
   }
   const cycleTimes = cycleResults.filter((r) => r.include)
 
-  // Per-issue breakdown, persisted alongside the aggregates so the UI can
-  // show exactly which issues fed a given week's numbers (not just the
-  // final avgCycleTimeDays/sprintCompletionPct).
+  // Per-issue breakdown, persisted alongside the aggregates so the UI can show
+  // exactly which issues fed a sprint's numbers (not just the final averages).
   const details = issues.map((issue) => {
     const cycle = cycleResults.find((r) => r.key === issue.key)
     return {
@@ -161,23 +187,35 @@ async function main() {
     ? Math.round((source.reduce((sum, c) => sum + c.days, 0) / source.length) * 10) / 10
     : 0
 
-  if (usingProxy) {
+  if (usingProxy && sprint.state === 'active') {
     console.warn(
-      '⚠ no completed issues in the active sprint yet — avgCycleTimeDays is an ' +
-        'in-progress-elapsed-time proxy, not a true cycle time.'
+      '  ⚠ no completed issues yet — avgCycleTimeDays is an in-progress-elapsed ' +
+        'proxy, not a true cycle time.'
     )
   }
 
-  console.log('\nCycle time diagnostics (used for avgCycleTimeDays):')
-  for (const r of cycleResults) {
-    if (r.include) {
-      console.log(`  ✓ ${r.key}: ${r.days.toFixed(2)}d${r.isProxy ? ' (proxy, still in progress)' : ''}`)
-    } else {
-      console.log(`  ✗ ${r.key}: excluded (${r.reason})`)
-    }
-  }
+  return { issueCount, avgCycleTimeDays, sprintCompletionPct, details }
+}
 
-  const isoWeek = getIsoWeek(new Date())
+async function main() {
+  const sprints = await getAllSprints()
+
+  const rows = []
+  for (const [i, sprint] of sprints.entries()) {
+    const issues = await getSprintIssues(sprint.id)
+    const jira = await computeSprintJira(sprint, issues)
+    rows.push({
+      week: i + 1,
+      sprint: {
+        id: sprint.id,
+        name: sprint.name,
+        state: sprint.state,
+        startDate: sprint.startDate,
+        endDate: sprint.endDate,
+      },
+      jira,
+    })
+  }
 
   let data = {}
   try {
@@ -186,27 +224,23 @@ async function main() {
     // no file yet — start fresh
   }
 
-  const teamWeeks = data[TEAM_ID] ?? []
-  const lastRow = teamWeeks[teamWeeks.length - 1]
-  const newRow = {
-    week: lastRow && lastRow.isoWeek === isoWeek ? lastRow.week : (lastRow?.week ?? 0) + 1,
-    isoWeek,
-    jira: { issueCount, avgCycleTimeDays, sprintCompletionPct, details },
-  }
-
-  const updatedWeeks =
-    lastRow && lastRow.isoWeek === isoWeek
-      ? [...teamWeeks.slice(0, -1), newRow]
-      : [...teamWeeks, newRow]
-
-  data[TEAM_ID] = updatedWeeks
+  // Full backfill: we pull every sprint each run, so replace the team's rows
+  // rather than appending (no drift, re-runnable, idempotent).
+  data[TEAM_ID] = rows
 
   await writeFile(OUTPUT_PATH, JSON.stringify(data, null, 2) + '\n')
 
-  console.log('\nSummary:')
-  console.table([
-    { team: TEAM_ID, week: newRow.week, isoWeek, issueCount, avgCycleTimeDays, sprintCompletionPct },
-  ])
+  console.log('\nSummary (one row per sprint, aligned to sprint boundaries):')
+  console.table(
+    rows.map((r) => ({
+      team: TEAM_ID,
+      sprint: r.sprint.name,
+      state: r.sprint.state,
+      issues: r.jira.issueCount,
+      avgCycleTimeDays: r.jira.avgCycleTimeDays,
+      sprintCompletionPct: r.jira.sprintCompletionPct,
+    }))
+  )
   console.log(`Wrote ${OUTPUT_PATH}`)
 }
 

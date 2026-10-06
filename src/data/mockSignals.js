@@ -5,6 +5,7 @@
 import liveJiraWeeks from './jiraSignals.generated.json'
 import liveCalendarWeeks from './calendarSignals.generated.json'
 import { generateWeeklyRows } from './generatedSignals'
+import { hasSprintRows, buildSprintRows } from './sprintAlign'
 
 // Mock signal data for two teams across 8 consecutive weeks.
 //
@@ -79,35 +80,56 @@ function withSources(weeks, sources) {
   return weeks.map((w) => ({ ...w, sources }))
 }
 
-// Jira and calendar ingestion run independently (different days, different
-// cadences), so merge by `isoWeek` rather than trusting each file's stored
-// `week` index — that keeps the two sources from drifting out of sync.
-// Jira is the anchor signal: a week with calendar data but no jira data has
-// nothing to show (healthScore.js requires `signals.jira`), so it's
-// dropped rather than given a placeholder.
+// Jira is the anchor signal: a period with calendar data but no jira data has
+// nothing to show (healthScore.js requires `signals.jira`), so it's dropped
+// rather than given a placeholder.
+//
+// Two shapes are supported. The current ingest emits one Jira row per real
+// sprint (tagged with the sprint's boundaries); those are aligned to sprints
+// and the weekly calendar rows fold into each sprint window (see sprintAlign.js).
+// A legacy file (isoWeek-keyed Jira rows, no sprint metadata) still merges by
+// calendar week as before — so nothing breaks until `npm run ingest:jira` is
+// re-run — and each row is labelled as a plain week.
 const liveTeamIds = new Set([...Object.keys(liveJiraWeeks), ...Object.keys(liveCalendarWeeks)])
 
-const liveTeams = Object.fromEntries(
-  Array.from(liveTeamIds).map((teamId) => {
-    const jiraByWeek = new Map((liveJiraWeeks[teamId] ?? []).map((row) => [row.isoWeek, row.jira]))
-    const calendarByWeek = new Map(
-      (liveCalendarWeeks[teamId] ?? []).map((row) => [row.isoWeek, row.calendar])
-    )
-
-    const weeks = [...jiraByWeek.keys()].sort().map((isoWeek, i) => ({
-      week: i + 1,
-      jira: jiraByWeek.get(isoWeek),
+function buildLiveTeam(jiraRows, calendarRows) {
+  if (hasSprintRows(jiraRows)) {
+    return buildSprintRows(jiraRows, calendarRows).map((r) => ({
+      week: r.week,
+      period: r.period,
+      jira: r.jira,
       github: PENDING_GITHUB,
-      calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
+      calendar: r.calendar ?? PENDING_CALENDAR,
       sources: {
         jira: 'live',
         github: 'placeholder',
-        calendar: calendarByWeek.has(isoWeek) ? 'live' : 'placeholder',
+        calendar: r.hasCalendar ? 'live' : 'placeholder',
       },
     }))
+  }
 
-    return [teamId, weeks]
-  })
+  // Legacy: join Jira and calendar by ISO calendar week.
+  const jiraByWeek = new Map(jiraRows.map((row) => [row.isoWeek, row.jira]))
+  const calendarByWeek = new Map(calendarRows.map((row) => [row.isoWeek, row.calendar]))
+  return [...jiraByWeek.keys()].sort().map((isoWeek, i) => ({
+    week: i + 1,
+    period: { kind: 'week', isoWeek },
+    jira: jiraByWeek.get(isoWeek),
+    github: PENDING_GITHUB,
+    calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
+    sources: {
+      jira: 'live',
+      github: 'placeholder',
+      calendar: calendarByWeek.has(isoWeek) ? 'live' : 'placeholder',
+    },
+  }))
+}
+
+const liveTeams = Object.fromEntries(
+  Array.from(liveTeamIds).map((teamId) => [
+    teamId,
+    buildLiveTeam(liveJiraWeeks[teamId] ?? [], liveCalendarWeeks[teamId] ?? []),
+  ])
 )
 
 export const HAND_TUNED_IDS = new Set(['platform', 'backend'])

@@ -2,7 +2,13 @@
   "solstice": [
     {
       "week": 1,
-      "isoWeek": "2026-W38",
+      "sprint": {
+        "id": 2,
+        "name": "SCRUM Sprint 0",
+        "state": "active",
+        "startDate": "2026-09-15T19:19:49.810Z",
+        "endDate": "2026-09-29T19:19:49.810Z"
+      },
       "jira": {
         "issueCount": 6,
         "avgCycleTimeDays": 4,
@@ -13,7 +19,7 @@
             "summary": "TikTok Spark Ads creative testing",
             "status": "Testing",
             "countsAsDone": false,
-            "cycleTimeDays": 4.05,
+            "cycleTimeDays": 20.47,
             "isProxy": true,
             "excludedReason": null
           },
@@ -31,7 +37,7 @@
             "summary": "Rewrite copy for 10 highest-traffic category pages",
             "status": "In Progress",
             "countsAsDone": false,
-            "cycleTimeDays": 4.05,
+            "cycleTimeDays": 20.47,
             "isProxy": true,
             "excludedReason": null
           },
@@ -40,7 +46,7 @@
             "summary": "Keyword & content gap analysis",
             "status": "In Progress",
             "countsAsDone": false,
-            "cycleTimeDays": 0,
+            "cycleTimeDays": 16.42,
             "isProxy": true,
             "excludedReason": null
           },

@@ -43,6 +43,7 @@ export function getTeamWeeklyHealth(teamId) {
     const earlyWarning = isEarlyWarning(scores, i)
     return {
       week: signals.week,
+      period: signals.period ?? null, // sprint/week label for the timeline
       signals,
       sources: signals.sources ?? null, // provenance, for the HUD source tags
       score: scores[i],
