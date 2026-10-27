@@ -32,6 +32,13 @@ Suggested merge order: open the PR for `feature/p0-hardening` first, review and 
 
 ## 3. Verified vs not verified
 
+**Read this first: no Workers AI call was made in this work.** The author had no Cloudflare credentials, so everything below tests the code *around* the model, not the model itself:
+
+- **Real model behaviour** enters only through the **recorded Sprint 5 outputs** (`eval/results.csv`, 170 live-model calls made earlier on the deployed endpoint). `replay-sprint5.mjs` feeds them through the old and the new pipeline. Those outputs came from the *old* prompt.
+- **Everything else uses a mock model** (`stress-test.mjs`, `test-facts-validate.mjs`) that returns what the test asks for: empty text, garbage, off-limits wording, a hang. That is the right tool for failure handling, and it says nothing about what the live model writes.
+- Some "after" numbers are true **by construction**, not because the model improved: the status now comes from code, so "status agrees with the flag" is 100% by definition. The gain is that the model can no longer decide it.
+- So the accurate claim is: *the guard rails around the AI are tested and improved; the AI's own output under the new prompt has not been measured.* Section 4.6 is how to measure it.
+
 **Verified offline** (re-run any time; commands in section 5):
 
 | Check | Before | After |
