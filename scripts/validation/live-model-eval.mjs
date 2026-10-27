@@ -25,7 +25,7 @@ const bundle = await build({
     contents: `
       export { generateCoachingNote, parseAction } from './coaching'
       export { computeFacts } from './facts'
-      export { validateModelWording, addressesTopSignal } from './validate'
+      export { validateModelWording, addressesTopSignal, isVagueFiller } from './validate'
       export { templateNote } from './template'`,
     resolveDir: `${ROOT}functions/api/_lib/`, loader: 'ts',
   },
@@ -100,6 +100,7 @@ for (const c of cases) {
     const action = m.parseAction(raw)
     let check = action ? m.validateModelWording({ action }, c.facts) : { ok: false, reason: raw ? 'not a single-line reply' : 'no response' }
     if (check.ok && !m.addressesTopSignal(action, c.facts)) check = { ok: false, reason: 'does not address the decided signal' }
+    if (check.ok && m.isVagueFiller(action)) check = { ok: false, reason: 'vague: only suggests a meeting or discussion' }
     runs.push({ source: note.source, note, raw, action, formatOk: !!action, valid: check.ok, reason: check.ok ? '' : check.reason, ms: trace?.ms ?? null })
     await new Promise((r2) => setTimeout(r2, 250))
   }
@@ -119,6 +120,10 @@ const consistent = rows.filter((r) => r.status !== 'healthy').filter((r) => new 
 const modelCases = rows.filter((r) => r.status !== 'healthy').length
 const withDigits = modelRuns.filter((r) => /\d/.test(r.raw)).length
 const words = modelRuns.filter((r) => r.action).map((r) => r.action.split(/\s+/).length)
+const startsSchedule = modelRuns.filter((r) => /^\s*(ACTION:\s*)?Schedule a/i.test(r.raw)).length
+const vagueRaw = modelRuns.filter((r) => r.action && m.isVagueFiller(r.action)).length
+const timeFrame = modelRuns.filter((r) => /\b(this sprint|next sprint|this week|next week|this quarter)\b/i.test(r.raw)).length
+const distinct = new Set(modelRuns.map((r) => r.raw)).size
 
 const lines = [
   '# Live-model evaluation of the current coaching pipeline',
@@ -132,6 +137,10 @@ const lines = [
   `| Wording passes the validator (note shown is model-written) | ${pct(modelRuns.filter((r) => r.valid).length, modelRuns.length)} |`,
   `| Fell back to the template (reply rejected or call failed) | ${pct(modelRuns.filter((r) => r.source === 'template').length, modelRuns.length)} |`,
   `| Reply contains any digit (prompt forbids numbers) | ${pct(withDigits, modelRuns.length)} |`,
+  `| Reply starts with "Schedule a ..." | ${pct(startsSchedule, modelRuns.length)} |`,
+  `| Reply only suggests a meeting or discussion (vague filler) | ${pct(vagueRaw, modelRuns.length)} |`,
+  `| Reply gives a time frame ("this sprint", "this week" ...) | ${pct(timeFrame, modelRuns.length)} |`,
+  `| Distinct replies across ${modelRuns.length} calls | ${distinct} |`,
   `| Same action text on all ${RUNS} runs of a case | ${pct(consistent, modelCases)} |`,
   `| Action length, words (median / max) | ${q(words, 0.5)} / ${Math.max(...words)} |`,
   `| Latency, ms (p50 / p95) | ${q(lat, 0.5)} / ${q(lat, 0.95)} |`,

@@ -24,6 +24,7 @@ Suggested merge order: open the PR for `feature/p0-hardening` first, review and 
 | The model writes **one `ACTION:` line only**. | `FACT_SYSTEM_PROMPT` in `coaching.ts` | Removes the model's ability to contradict the status or reverse a comparison. |
 | **Numbers are checked field-to-value**: a number must sit next to a signal name and equal that signal's value. | `validate.ts` | The old check accepted any number present anywhere in the evidence: 8.7% of random integers passed, and real values attached to the wrong field passed 100%. |
 | The **team name is not sent to the model**. | `buildFactPrompt` in `facts.ts` | User-chosen text inside a prompt is an injection surface; the model does not need it. |
+| A **coaching playbook** gives each signal one concrete, outcome-linked next step; the model is told to adapt it, and replies that only suggest a meeting or discussion are refused. | `playbook.ts`, `isVagueFiller` in `validate.ts`, `buildFactPrompt` in `facts.ts`; sources in `docs/reference-skills/` | Live runs showed generic "schedule a meeting" advice. The steps paraphrase third-party practitioner guidance (not validated research); see the README there. |
 | `"drop"` only appears in the signal line when the status is a concern. | `signalSentence` in `facts.ts` | 95% of "healthy" notes used to say "Biggest contributor to the drop". |
 | **8-second timeout** on the model call (`AI_TIMEOUT_MS`), falling back to the template. | `coaching.ts` | A hung model call used to hang the request forever. |
 | API returns **JSON errors only**, validates field lengths, and fails closed (401/503) on a bad or unverifiable access token. | `app.ts`, `auth.ts` | Bad JSON, a dead database and malformed tokens used to produce non-JSON 500s. |
@@ -50,28 +51,30 @@ Suggested merge order: open the PR for `feature/p0-hardening` first, review and 
 
 Some "after" numbers are true **by construction**, not because the model improved: the status now comes from code, so "status agrees with the flag" is 100% by definition. The gain is that the model can no longer decide it. The replay's "notes whose wording came from the model" fell from 25% to 3.8% after the final guard was added; that figure describes the *old* Sprint 5 prompt's outputs and is not meaningful for the new prompt (use 3b).
 
-### 3b. Measured on the live model (`scripts/validation/live-model-eval.mjs`, 51 real calls)
+### 3b. Measured on the live model (`scripts/validation/live-model-eval.mjs`, 51 real calls per run)
 
-Real `@cf/meta/llama-3.1-8b-instruct-fp8` on Workers AI, called through the production `generateCoachingNote` (new prompt, validator, timeout), 17 non-healthy cases x 3 runs (the 16 real Platform/Backend team-weeks plus seeded profiles at weeks 5 and 8). The 19 healthy cases correctly made **0** model calls.
+Real `@cf/meta/llama-3.1-8b-instruct-fp8` on Workers AI, called through the production `generateCoachingNote`, 17 non-healthy cases x 3 runs (the 16 real Platform/Backend team-weeks plus seeded profiles at weeks 5 and 8). The 19 healthy cases correctly made **0** model calls in every run. Four runs, each exposing something:
 
-| Measure | Run 1 (parser bug) | Run 2 (fixed) |
-| --- | --- | --- |
-| Reply is a usable single-line action | 0% | 100% (51/51) |
-| Note shown is model-written (passes every check) | 0% | **70.6%** (36/51) |
-| Fell back to the template | 100% | 29.4% (15/51) |
-| Rejected because it cites a number not tied to its field | — | 12 of the 15 |
-| Rejected because it ignored the signal the code decided | — | 3 of the 15 |
-| Same action text on all 3 runs of a case (temperature 0) | — | 88.2% (15/17) |
-| Latency p50 / p95 | 1.4 s / 2.2 s | 1.4 s / 2.0 s |
+| Run | What changed | Note shown is model-written | Replies starting "Schedule a ..." | Distinct replies |
+| --- | --- | --- | --- | --- |
+| 1 | New one-line prompt, parser required an `ACTION:` label | **0%** (parser bug) | n/a | n/a |
+| 2 | Parser accepts an unlabelled line; reply must address the decided signal | 70.6% | **36 / 51** | 17 |
+| 3 | Added the coaching playbook (below) | 35.3% (my topic check was too strict) | 0 | 11 |
+| 4 (final) | Topic check matches on-topic vocabulary; length limit aligned with the prompt | **88.2%** | **0** | 9 |
 
-Files: `eval/validation/after/live_model_eval.md` (summary and per-case actions), `live_model_raw.json` (every raw reply), `live_model_blind_sheet.csv` + `live_model_blind_key.csv` (blinded template-vs-model sheet for human scoring); run 1 is kept at `eval/validation/before/live_model_eval_run1_before_format_fix.md`.
+Final run: 100% usable single-line replies; 11.8% fall back to the template (all because the model invented a number, e.g. "reduce capacity to 80%", which is also wrong advice); vague "meeting or discussion" filler 0%; 100% identical across the 3 runs of a case; latency p50 about 1.4 s. Files: `eval/validation/after/live_model_*` (final), `eval/validation/before/live_model_eval_run{1,2,3}_*.md` (earlier runs).
 
-**What the live run says about quality (read before deciding to keep the model):**
+**What the runs taught (read before trusting any number):**
 
-- The replies are **generic and repetitive**: 36 of the 51 replies start with "Schedule a meeting with the team to discuss…", including for meeting-load problems, where the template's "Audit recurring meetings for any that can be dropped" is arguably better. Only 17 distinct replies occurred across 51 calls (one per case).
-- The model sometimes writes goals the data does not contain ("reduce review turnaround to peer average within the next two weeks").
-- This is why the decision rule matters: **keep the model-written action only if it beats the template in a blinded human comparison.** The sheet is ready; nobody has scored it yet.
-- Not yet tried, possible improvements: tighten the prompt (forbid "schedule a meeting", give two example actions), or let the model choose among the template's actions instead of writing free text.
+- **Run 1** was my bug. The offline tests could not see it because the mock model returned the format the prompt asked for.
+- **Run 2** showed the quality problem: generic "Schedule a meeting with the team to discuss ..." for 36 of 51 replies, including for meeting-load problems.
+- **Run 3** was my validator being too strict: it demanded the literal signal name, so it rejected on-topic advice such as "limit work in progress" for cycle time. A drop in an acceptance rate can be the guard, not the model.
+- **The fix for run 2 came from the skills in `docs/reference-skills/`**, via `functions/api/_lib/playbook.ts`: one concrete move per signal, used as the template step, as grounding in the prompt, and as the bar the validator enforces (`isVagueFiller`). Example for meeting load: before, "Schedule a meeting with the team to discuss ... meeting load expectations"; after, "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that do not, requiring an agenda and an owner."
+- **The model now mostly rewords the playbook step.** Of 15 model-written notes, 1 was word-for-word a playbook step and 6 overlapped it by 60% or more (median 0.50). The specificity comes from the playbook, not from the model; the model's contribution is wording that fits the situation, and occasionally a time frame ("this sprint"). Whether that is worth a model call is exactly what the blinded comparison should decide.
+- **Attribution was corrected while writing the README:** my first search wrongly credited the review-SLA idea to `vpe-advisor/SKILL.md`; the real sources are `vpe-advisor/references/eng-productivity-and-quality.md` and `delivery-manager/SKILL.md`. Check any further attribution against the copied files.
+
+Blinded sheet: `eval/validation/after/live_model_blind_sheet.csv` (+ `_key.csv`). Nobody has scored it yet; keep the model-written action only if it wins (section 4.6).
+
 
 ### 3c. NOT verified — still needs Cloudflare or people
 
@@ -194,13 +197,14 @@ Reproducing a "before" number: `git worktree add --detach /tmp/old feature/p0-ha
 ## 6. Known open issues (most important first)
 
 1. **Raw ticket and event titles ship in the front-end bundle.** `src/data/jiraSignals.generated.json` and `calendarSignals.generated.json` contain per-issue `summary` and per-event `title` and are imported by `mockSignals.js`. The API strips them, the bundle does not. Fix: drop `details` in the ingest scripts before writing the files (and stop importing them in production). This is the main remaining privacy gap.
-2. **The model's output quality is unproven.** It now works on the live model (70.6% of replies accepted) but is generic and repetitive, and nobody has scored it against the template (section 3b, 4.6). If it does not win the blinded comparison, ship the template.
+2. **Whether the model adds value over the template is unproven.** It works on the live model (88.2% of replies accepted, no vague filler), but it mostly rewords the playbook step, and nobody has scored it against the template (section 3b, 4.6). If it does not win the blinded comparison, ship the template: it now carries the same specific advice.
 3. **Cycle time reads ~0 days on the refreshed Jira data.** Jira timestamps are real-time and the board was populated in one sitting, so issues finished "in minutes". It becomes realistic only as issues move over several days.
 4. **Calendar signal covers one week** (2026-W38). The October sprint shows the meeting load as a placeholder and excludes it from the score.
 5. **GitHub is still a placeholder** (excluded from the score). Without it, review-bottleneck strain is nearly invisible (recall 65% → 15% in the seeded evaluation).
 6. **The early-warning rule is a "big drops only" detector** (recall 43% on held-out seeded strain, 26% for subtle) and fires on 55% of benign events (holidays, planned hardening sprints). A per-signal CUSUM candidate raised subtle recall to 51% (95% CI 43–58%) but delayed detection from 1 to 3 weeks and raised benign fires to 68%; it was **not shipped** (`scripts/validation/persignal.mjs`, `eval/validation/after/persignal_heldout.md`).
 7. **Human validation has not been run** (expert content-validity panel, blinded note comparison). A third, independently written scenario library is still needed (`scripts/validation/scenarios.mjs`: only the `HELDOUT` data changes).
-8. `eval/validation/e5_answer_key.json` is the answer key for the expert sessions: do not hand it to participants.
+8. **Minimum group size is undecided.** The Sprint 6 plan proposed suppressing scores for teams with fewer than 3 consenting members; `docs/reference-skills/hr-operations/people-analytics/SKILL.md` says 5 (k-anonymity). Nothing enforces either yet, and the Solstice team (one to five engineers) is the first it would affect.
+9. `eval/validation/e5_answer_key.json` is the answer key for the expert sessions: do not hand it to participants.
 
 ## 7. Jira board (the data source for the live team)
 
@@ -225,7 +229,8 @@ The ingest (`npm run ingest:jira`, or the worker) reads this board, so editing i
 | Path | Purpose |
 | --- | --- |
 | `functions/api/_lib/app.ts` | All API routes, auth middleware, error handling |
-| `functions/api/_lib/{facts,template,validate,coaching}.ts` | Coaching pipeline (status, ranking, wording check, model call) |
+| `functions/api/_lib/{facts,template,validate,coaching,playbook}.ts` | Coaching pipeline (status, ranking, wording check, model call, per-signal playbook) |
+| `docs/reference-skills/` | Third-party practitioner skills the playbook draws on (licence and attribution README inside) |
 | `functions/api/_lib/{auth,ratelimit,evidence,signals,scoring}.ts` | Access/JWT, rate limiting, server-side evidence, signal merge, score |
 | `src/logic/healthScore.js`, `src/data/mockSignals.js` | Browser scorer and data merge (must stay identical to the server copies; `test-scoring-parity.mjs` checks the scorer) |
 | `worker-ingestion/` | Daily Cron Worker: Jira + Google Calendar into D1 |

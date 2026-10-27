@@ -86,21 +86,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner.",
         "reason": "",
-        "ms": 1576
+        "ms": 1439
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and potential adjustments.",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner.",
         "reason": "",
-        "ms": 1100
+        "ms": 1832
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and potential adjustments.",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner.",
         "reason": "",
-        "ms": 1036
+        "ms": 2111
       }
     ]
   },
@@ -119,21 +119,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Investigate and discuss with the team the root cause of the prolonged review turnaround times.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1625
+        "ms": 1711
       },
       {
         "source": "model",
-        "raw": "Investigate and discuss with the team the root cause of the prolonged review turnaround times.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1395
+        "ms": 1742
       },
       {
         "source": "model",
-        "raw": "Investigate and discuss with the team the root cause of the prolonged review turnaround times.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1479
+        "ms": 2011
       }
     ]
   },
@@ -152,21 +152,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set a goal to reduce review turnaround time to peer average within the next two weeks.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1983
+        "ms": 1806
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set a goal to reduce review turnaround time to peer average within the next two weeks.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1663
+        "ms": 1599
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set a goal to reduce review turnaround time to peer average within the next two weeks.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1657
+        "ms": 1671
       }
     ]
   },
@@ -185,21 +185,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set a goal for reducing review turnaround time to peer average within the next sprint.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 2259
+        "ms": 1724
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set a goal for reducing review turnaround time to peer average within the next sprint.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1582
+        "ms": 1850
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set a goal for reducing review turnaround time to peer average within the next sprint.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 2028
+        "ms": 1692
       }
     ]
   },
@@ -208,22 +208,22 @@
     "status": "concern",
     "runs": [
       {
-        "source": "template",
-        "raw": "Investigate the root cause of the 7.1-day cycle time to identify areas for process improvement.",
-        "reason": "number 7.1 is not attached to a known field",
-        "ms": 1425
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 2646
       },
       {
-        "source": "template",
-        "raw": "Investigate the root cause of the 7.1-day cycle time to identify areas for process improvement.",
-        "reason": "number 7.1 is not attached to a known field",
-        "ms": 1467
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1361
       },
       {
-        "source": "template",
-        "raw": "Investigate the root cause of the 7.1-day cycle time to identify areas for process improvement.",
-        "reason": "number 7.1 is not attached to a known field",
-        "ms": 1991
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1256
       }
     ]
   },
@@ -233,21 +233,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and boundaries.",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner for all meetings this sprint.",
         "reason": "",
-        "ms": 1180
+        "ms": 2509
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and boundaries.",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner for all meetings this sprint.",
         "reason": "",
-        "ms": 1283
+        "ms": 1695
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and boundaries.",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner for all meetings this sprint.",
         "reason": "",
-        "ms": 1236
+        "ms": 1783
       }
     ]
   },
@@ -257,21 +257,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that do not, requiring an agenda and an owner for the remaining meetings.",
         "reason": "",
-        "ms": 1463
+        "ms": 1643
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that do not, requiring an agenda and an owner for the remaining meetings.",
         "reason": "",
-        "ms": 1320
+        "ms": 1615
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that do not, requiring an agenda and an owner for the remaining meetings.",
         "reason": "",
-        "ms": 1590
+        "ms": 1599
       }
     ]
   },
@@ -280,22 +280,22 @@
     "status": "concern",
     "runs": [
       {
-        "source": "template",
-        "raw": "Investigate the root cause of the 7.3-day cycle time to identify potential bottlenecks and inefficiencies.",
-        "reason": "number 7.3 is not attached to a known field",
-        "ms": 1709
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1296
       },
       {
-        "source": "template",
-        "raw": "Investigate the root cause of the 7.3-day cycle time to identify potential bottlenecks and inefficiencies.",
-        "reason": "number 7.3 is not attached to a known field",
-        "ms": 1570
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1691
       },
       {
-        "source": "template",
-        "raw": "Investigate the root cause of the 7.3-day cycle time to identify potential bottlenecks and inefficiencies.",
-        "reason": "number 7.3 is not attached to a known field",
-        "ms": 1258
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1703
       }
     ]
   },
@@ -304,22 +304,22 @@
     "status": "concern",
     "runs": [
       {
-        "source": "template",
-        "raw": "Schedule a meeting with the team to discuss and establish clear boundaries around work hours and expectations.",
-        "reason": "does not address the decided signal",
-        "ms": 1015
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1750
       },
       {
-        "source": "template",
-        "raw": "Schedule a meeting with the team to discuss and establish clear boundaries around work hours and expectations.",
-        "reason": "does not address the decided signal",
-        "ms": 1217
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 2601
       },
       {
-        "source": "template",
-        "raw": "Schedule a meeting with the team to discuss and establish clear boundaries around work hours and expectations.",
-        "reason": "does not address the decided signal",
-        "ms": 1165
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1683
       }
     ]
   },
@@ -329,21 +329,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Investigate the root cause of the prolonged cycle time to identify areas for process improvement.",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
         "reason": "",
-        "ms": 1099
+        "ms": 1570
       },
       {
         "source": "model",
-        "raw": "Investigate the root cause of the prolonged cycle time to identify areas for process improvement.",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
         "reason": "",
-        "ms": 1202
+        "ms": 1324
       },
       {
         "source": "model",
-        "raw": "Investigate the root cause of the prolonged cycle time to identify areas for process improvement.",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
         "reason": "",
-        "ms": 997
+        "ms": 1765
       }
     ]
   },
@@ -397,22 +397,22 @@
     "status": "steady",
     "runs": [
       {
-        "source": "template",
-        "raw": "Schedule a team meeting to discuss and establish a plan to reduce after-hours commits by 20% within the next two weeks.",
-        "reason": "number 20 does not match afterHoursCommits",
-        "ms": 1539
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1541
       },
       {
-        "source": "template",
-        "raw": "Schedule a team meeting to discuss and establish a plan to reduce after-hours commits by 20% within the next two weeks.",
-        "reason": "number 20 does not match afterHoursCommits",
-        "ms": 1833
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1617
       },
       {
-        "source": "template",
-        "raw": "Schedule a team meeting to discuss and establish a plan to reduce after-hours commits by 20% within the next two weeks.",
-        "reason": "number 20 does not match afterHoursCommits",
-        "ms": 1255
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1585
       }
     ]
   },
@@ -422,21 +422,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic review turnaround goals and expectations.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1324
+        "ms": 2111
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic review turnaround goals and expectations.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1385
+        "ms": 2377
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic review turnaround goals and expectations.",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
         "reason": "",
-        "ms": 1645
+        "ms": 1844
       }
     ]
   },
@@ -445,22 +445,22 @@
     "status": "concern",
     "runs": [
       {
-        "source": "template",
-        "raw": "Investigate the root cause of the 4.3-day cycle time to identify areas for improvement.",
-        "reason": "number 4.3 is not attached to a known field",
-        "ms": 1113
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1496
       },
       {
-        "source": "template",
-        "raw": "Investigate the root cause of the 4.3-day cycle time to identify areas for improvement.",
-        "reason": "number 4.3 is not attached to a known field",
-        "ms": 1336
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1541
       },
       {
-        "source": "template",
-        "raw": "Investigate the root cause of the 4.3-day cycle time to identify areas for improvement.",
-        "reason": "number 4.3 is not attached to a known field",
-        "ms": 1652
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1453
       }
     ]
   },
@@ -470,21 +470,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and adjust meeting load to optimize team capacity and efficiency.",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that don't, requiring an agenda and owner for the remaining meetings.",
         "reason": "",
-        "ms": 1467
+        "ms": 1927
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and adjust meeting load to optimize team capacity and efficiency.",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that don't, requiring an agenda and owner for the remaining meetings.",
         "reason": "",
-        "ms": 1361
+        "ms": 1885
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and adjust meeting load to optimize team capacity and efficiency.",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that don't, requiring an agenda and owner for the remaining meetings.",
         "reason": "",
-        "ms": 1478
+        "ms": 1768
       }
     ]
   },
@@ -493,22 +493,22 @@
     "status": "steady",
     "runs": [
       {
-        "source": "model",
-        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
-        "reason": "",
-        "ms": 1289
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan any unfinished work from the last sprint to prioritize and allocate resources effectively.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 1640
       },
       {
-        "source": "model",
-        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
-        "reason": "",
-        "ms": 1234
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan any unfinished work from the last sprint to prioritize and allocate resources effectively.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 2186
       },
       {
-        "source": "model",
-        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
-        "reason": "",
-        "ms": 1543
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan any unfinished work from the last sprint to prioritize and allocate resources effectively.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 1906
       }
     ]
   },
@@ -518,21 +518,21 @@
     "runs": [
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and establish a plan to reduce after-hours commits.",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
         "reason": "",
-        "ms": 1414
+        "ms": 2149
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and establish a plan to reduce after-hours commits.",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
         "reason": "",
-        "ms": 1752
+        "ms": 1735
       },
       {
         "source": "model",
-        "raw": "Schedule a meeting with the team to discuss and set realistic goals for reducing after-hours commits.",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
         "reason": "",
-        "ms": 2719
+        "ms": 1728
       }
     ]
   },
@@ -541,22 +541,22 @@
     "status": "steady",
     "runs": [
       {
-        "source": "model",
-        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
-        "reason": "",
-        "ms": 1714
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan unfinished work from previous sprints to ensure a buffer for unexpected tasks and stretch goals.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 2077
       },
       {
-        "source": "model",
-        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
-        "reason": "",
-        "ms": 1100
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan unfinished work from previous sprints to ensure a buffer for unexpected tasks and stretch goals.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 1863
       },
       {
-        "source": "model",
-        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
-        "reason": "",
-        "ms": 1329
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan unfinished work from previous sprints to ensure a buffer for unexpected tasks and stretch goals.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 2112
       }
     ]
   },
