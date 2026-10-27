@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Sparkles, TriangleAlert } from 'lucide-react'
 import { useTeamsStore } from '../store/teamsStore'
-import { useSignalsStore } from '../store/signalsStore'
-import { getTeamWeek } from '../logic/teamHealth'
 import { api } from '../lib/api'
+import CoachAvatar from './CoachAvatar'
 import './coachingNote.css'
 
 // AI coaching suggestion — Sprint 3's documented-but-never-built stage 5
@@ -19,65 +18,39 @@ import './coachingNote.css'
 // paragraph — short and scannable enough to fit the HUD's fixed-width
 // sidebar without needing to scroll.
 
-function evidenceSignals(weekHealth) {
-  const { jira, github, calendar } = weekHealth.signals
-  return {
-    avgCycleTimeDays: jira.avgCycleTimeDays,
-    sprintCompletionPct: jira.sprintCompletionPct,
-    avgReviewTurnaroundHours: github.avgReviewTurnaroundHours,
-    pctCommitsAfter7pm: github.pctCommitsAfter7pm,
-    avgMeetingHoursPerWeek: calendar.avgMeetingHoursPerWeek,
-  }
-}
-
-// Same-cohort peer if one's data happens to already be loaded (kept
-// zero-friction: this never triggers an extra fetch just to find a peer),
-// otherwise any other loaded team, otherwise none — the evidence's `peer`
-// field is optional either way.
-function findPeer(teamId, currentWeek) {
-  const teams = useTeamsStore.getState().teams
-  const team = teams[teamId]
-  const loaded = useSignalsStore.getState().loadedTeams
-  const candidates = Object.values(teams).filter((t) => t.id !== teamId && loaded.has(t.id))
-  const sameCohort = team
-    ? candidates.find(
-        (t) =>
-          t.cohort.sizeBucket === team.cohort.sizeBucket &&
-          t.cohort.functionType === team.cohort.functionType
-      )
-    : null
-  const peerTeam = sameCohort ?? candidates[0]
-  if (!peerTeam) return null
-  const peerWeek = getTeamWeek(peerTeam.id, currentWeek)
-  if (!peerWeek) return null
-  return { name: peerTeam.name, score: peerWeek.score, signals: evidenceSignals(peerWeek) }
-}
-
-export default function CoachingNote({ teamId, currentWeek, weekHealth }) {
+export default function CoachingNote({ teamId, weekHealth }) {
   const [phase, setPhase] = useState('idle') // idle | loading | done | error
   const [note, setNote] = useState(null) // { status, signal, action }
   const [error, setError] = useState('')
   const team = useTeamsStore((s) => s.teams[teamId])
 
+  // A note belongs to one team+week. Switching either clears it, and a reply
+  // that arrives after the switch is discarded — so an old team's note can
+  // never show under a new team/week (report §3.3 stale-note bugs).
+  const key = `${teamId}:${weekHealth?.week}`
+  const keyRef = useRef(key)
+
+  useEffect(() => {
+    keyRef.current = key
+    setPhase('idle')
+    setNote(null)
+    setError('')
+  }, [key])
+
   async function handleClick() {
+    const requestKey = key
     setPhase('loading')
     setError('')
     try {
-      const prevWeek = currentWeek > 0 ? getTeamWeek(teamId, currentWeek - 1) : null
-      const evidence = {
-        team: { name: team.name, cohort: team.cohort },
-        week: weekHealth.week,
-        score: weekHealth.score,
-        trend: prevWeek ? weekHealth.score - prevWeek.score : 0,
-        earlyWarning: weekHealth.earlyWarning,
-        signals: evidenceSignals(weekHealth),
-        peer: findPeer(teamId, currentWeek) ?? undefined,
-      }
-      const result = await api.post('/insight', evidence)
+      // The server computes score, trend, signals, and peer from { teamId, week }.
+      const result = await api.post('/insight', { teamId, week: weekHealth.week })
+      if (keyRef.current !== requestKey) return // team/week changed mid-flight
       setNote(result)
       setPhase('done')
     } catch (err) {
-      setError(err.message)
+      if (keyRef.current !== requestKey) return
+      // The backend refuses coaching on demo/generated teams (no live data).
+      setError(err.message.includes('demo_data') ? 'demo' : err.message)
       setPhase('error')
     }
   }
@@ -87,48 +60,69 @@ export default function CoachingNote({ teamId, currentWeek, weekHealth }) {
   return (
     <div className="coaching-note">
       {phase === 'idle' && (
-        <button
-          className={`coaching-note-trigger glass${weekHealth.earlyWarning ? ' coaching-note-trigger--warning' : ''}`}
-          onClick={handleClick}
-        >
-          {weekHealth.earlyWarning ? <TriangleAlert size={15} /> : <Sparkles size={15} />}
-          Get AI coaching suggestion
-        </button>
+        <div className="coach-speech">
+          <CoachAvatar mood={weekHealth.earlyWarning ? 'concerned' : 'happy'} />
+          <button
+            className={`coach-bubble coach-bubble--trigger glass${weekHealth.earlyWarning ? ' coach-bubble--warning' : ''}`}
+            onClick={handleClick}
+          >
+            {weekHealth.earlyWarning ? <TriangleAlert size={14} /> : <Sparkles size={14} />}
+            Get AI coaching suggestion
+          </button>
+        </div>
       )}
       {phase === 'loading' && (
-        <div className="coaching-note-card glass coaching-note-card--loading">
-          <Sparkles size={15} className="coaching-note-spin" />
-          Thinking it through...
+        <div className="coach-speech">
+          <CoachAvatar mood="thinking" />
+          <div className="coach-bubble glass coach-bubble--loading">
+            <span>Thinking it through</span>
+            <span className="coach-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </div>
         </div>
       )}
       {phase === 'done' && note && (
-        <div className="coaching-note-card glass">
-          <div className="coaching-note-head">
-            <span className="coaching-note-label">
-              <Sparkles size={13} /> AI coaching
-            </span>
-            <button className="coaching-note-reset" onClick={() => setPhase('idle')}>
-              Ask again
-            </button>
+        <div className="coach-speech">
+          <CoachAvatar mood={weekHealth.earlyWarning ? 'concerned' : 'happy'} />
+          <div className="coach-bubble glass">
+            <div className="coaching-note-head">
+              <span className="coaching-note-label">
+                <Sparkles size={12} /> {note.source === 'template' ? 'Auto-generated note' : 'AI coaching'}
+              </span>
+              <button className="coaching-note-reset" onClick={() => setPhase('idle')}>
+                Ask again
+              </button>
+            </div>
+            {note.status && <p className="coaching-note-status">{note.status}</p>}
+            {note.signal && (
+              <p className="coaching-note-row">
+                <span>Signal</span>
+                {note.signal}
+              </p>
+            )}
+            {note.action && (
+              <p className="coaching-note-row">
+                <span>Next step</span>
+                {note.action}
+              </p>
+            )}
           </div>
-          {note.status && <p className="coaching-note-status">{note.status}</p>}
-          {note.signal && (
-            <p className="coaching-note-row">
-              <span>Signal</span>
-              {note.signal}
-            </p>
-          )}
-          {note.action && (
-            <p className="coaching-note-row">
-              <span>Next step</span>
-              {note.action}
-            </p>
-          )}
         </div>
       )}
       {phase === 'error' && (
-        <div className="coaching-note-card glass coaching-note-card--error">
-          Couldn't generate a suggestion right now ({error}). The score and signals above are unaffected.
+        <div className="coach-speech">
+          <CoachAvatar mood="concerned" />
+          <div className="coach-bubble glass coach-bubble--error">
+            {error === 'demo'
+              ? 'AI coaching needs a team with live data — this team is on demo data.'
+              : `Couldn't generate a suggestion right now (${error}). The score and signals above are unaffected.`}
+            <button className="coaching-note-reset coach-bubble-retry" onClick={() => setPhase('idle')}>
+              Try again
+            </button>
+          </div>
         </div>
       )}
     </div>

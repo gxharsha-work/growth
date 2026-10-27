@@ -73,31 +73,34 @@ export const WEIGHTS = {
   meetingLoad: 0.2,
 }
 
+// Mirror of functions/api/_lib/scoring.ts's rule — kept identical so the
+// browser and server always agree (scripts/test-scoring-parity.mjs checks it).
+// A term counts unless its source is a placeholder (or absent); the remaining
+// weights are rescaled, so an unconnected integration doesn't distort the score.
+function sourceIncluded(src) {
+  return src === 'live' || src === 'demo'
+}
+
 /**
  * Composite 0-100 health score for one team, one week.
  * `weekSignals` is one entry from data/mockSignals.js:
  *   { jira: {...}, github: {...}, calendar: {...} }
+ * `sources` (optional) is { jira, github, calendar } provenance; omitted
+ * counts everything (identical to the original weighting).
  */
-export function computeHealthScore(weekSignals) {
+export function computeHealthScore(weekSignals, sources) {
   const { jira, github, calendar } = weekSignals
-
-  const cycleScore = normalizeCycleTime(jira.avgCycleTimeDays)
-  const completionScore = normalizeCompletion(jira.sprintCompletionPct)
-  const reviewScore = normalizeReviewTurnaround(
-    github.avgReviewTurnaroundHours
-  )
-  const afterHoursScore = normalizeAfterHoursCommits(
-    github.pctCommitsAfter7pm
-  )
-  const meetingScore = normalizeMeetingLoad(calendar.avgMeetingHoursPerWeek)
-
-  const composite =
-    cycleScore * WEIGHTS.cycleTime +
-    completionScore * WEIGHTS.completion +
-    reviewScore * WEIGHTS.reviewTurnaround +
-    afterHoursScore * WEIGHTS.afterHoursCommits +
-    meetingScore * WEIGHTS.meetingLoad
-
+  const terms = [
+    { norm: normalizeCycleTime(jira.avgCycleTimeDays), weight: WEIGHTS.cycleTime, src: sources?.jira },
+    { norm: normalizeCompletion(jira.sprintCompletionPct), weight: WEIGHTS.completion, src: sources?.jira },
+    { norm: normalizeReviewTurnaround(github.avgReviewTurnaroundHours), weight: WEIGHTS.reviewTurnaround, src: sources?.github },
+    { norm: normalizeAfterHoursCommits(github.pctCommitsAfter7pm), weight: WEIGHTS.afterHoursCommits, src: sources?.github },
+    { norm: normalizeMeetingLoad(calendar.avgMeetingHoursPerWeek), weight: WEIGHTS.meetingLoad, src: sources?.calendar },
+  ]
+  const active = sources ? terms.filter((t) => sourceIncluded(t.src)) : terms
+  const totalWeight = active.reduce((s, t) => s + t.weight, 0)
+  if (totalWeight === 0) return 0
+  const composite = active.reduce((s, t) => s + t.norm * t.weight, 0) / totalWeight
   return Math.round(clamp(composite, 0, 100))
 }
 

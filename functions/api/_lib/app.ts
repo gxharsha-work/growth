@@ -12,8 +12,12 @@
 import { Hono } from 'hono'
 import { getSignalsForTeam } from './signals'
 import { generateCoachingNote, buildPrompt, type CoachingEvidence } from './coaching'
+import { buildEvidence } from './evidence'
+import { resolveUser, type AuthEnv, type AuthedUser } from './auth'
+import { checkCoachingRateLimit } from './ratelimit'
 
-type Env = { DB: D1Database; AI: Ai }
+type Env = AuthEnv & { AI: Ai }
+type Vars = { user: AuthedUser }
 
 type TeamRow = {
   id: string
@@ -71,7 +75,32 @@ function makeId(prefix: string) {
   return `${prefix}${Date.now().toString(36)}${idCounter}`
 }
 
-const app = new Hono<{ Bindings: Env }>().basePath('/api')
+const app = new Hono<{ Bindings: Env; Variables: Vars }>().basePath('/api')
+
+// Dev/eval tool: hidden entirely in production (404 before auth, so it is not even discoverable).
+app.use('/eval/*', async (c, next) => {
+  if (c.env.ENVIRONMENT === 'production') return c.json({ error: 'not found' }, 404)
+  await next()
+})
+
+// Every route needs an authenticated, role-assigned user. Writes and the AI
+// call require 'manager'; 'leadership' is read-only.
+app.use('*', async (c, next) => {
+  const { user, unauthenticated } = await resolveUser(c.req.raw.headers, c.env)
+  if (unauthenticated) return c.json({ error: 'not signed in' }, 401)
+  if (!user) return c.json({ error: 'not allowed: no role assigned' }, 403)
+
+  const isWrite = c.req.method !== 'GET'
+  const needsManager = isWrite || c.req.path.endsWith('/insight')
+  if (needsManager && user.role !== 'manager') {
+    return c.json({ error: 'manager role required' }, 403)
+  }
+
+  c.set('user', user)
+  await next()
+})
+
+app.get('/me', (c) => c.json(c.get('user')))
 
 // ---------- teams ----------
 
@@ -190,22 +219,53 @@ app.delete('/buildings/:id', async (c) => {
 
 // ---------- signals ----------
 
+// Raw per-ticket and per-event breakdowns (summaries, event titles) never leave
+// the server — only the aggregate numbers the scorer uses.
 app.get('/teams/:id/signals', async (c) => {
   const teamId = c.req.param('id')
   const { weeks, source } = await getSignalsForTeam(c.env.DB, teamId)
-  return c.json({ weeks, source })
+  const aggregated = weeks.map((w) => ({
+    ...w,
+    jira: { issueCount: w.jira.issueCount, avgCycleTimeDays: w.jira.avgCycleTimeDays, sprintCompletionPct: w.jira.sprintCompletionPct },
+    calendar: { avgMeetingHoursPerWeek: w.calendar.avgMeetingHoursPerWeek },
+  }))
+  return c.json({ weeks: aggregated, source })
 })
 
 // ---------- AI coaching (Sprint 3's stage 5 — see _lib/coaching.ts) ----------
 
+// The client names only the team and week. Score, trend, signals, and the
+// peer are all computed here, so the model is always given server-verified
+// evidence (see _lib/evidence.ts).
 app.post('/insight', async (c) => {
-  const evidence = await c.req.json<CoachingEvidence>()
-  if (!evidence?.team?.name || typeof evidence.score !== 'number') {
-    return c.json({ error: 'invalid evidence payload' }, 400)
+  const body = await c.req.json<{ teamId?: string; week?: number }>()
+  if (!body?.teamId || !Number.isInteger(body.week)) {
+    return c.json({ error: 'teamId and week are required' }, 400)
   }
+
+  const limit = await checkCoachingRateLimit(c.env, c.get('user').email, body.teamId)
+  if (!limit.ok) {
+    const seconds = Math.ceil(limit.retryAfter / 1000)
+    return c.json(
+      { error: `rate limit reached (${limit.scope}); try again later` },
+      429,
+      { 'Retry-After': String(seconds) }
+    )
+  }
+
+  const built = await buildEvidence(c.env.DB, body.teamId, body.week as number)
+  if (!built) return c.json({ error: 'unknown team or week' }, 404)
+
+  // Coaching needs real ingested data. Hand-tuned demo teams and generated
+  // teams would have the AI narrate fabricated history (report §3.2), so only
+  // a team with live Jira signal is eligible.
+  if (built.source !== 'live') {
+    return c.json({ error: 'demo_data' }, 403)
+  }
+
   try {
-    const note = await generateCoachingNote(c.env.AI, evidence)
-    return c.json(note)
+    const note = await generateCoachingNote(c.env.AI, built.evidence)
+    return c.json({ ...note, dataSource: built.source })
   } catch (err) {
     // The AI layer is an enhancement, never a dependency (Sprint 3/4's own
     // framing) — a failure here is reported as a normal error response, not

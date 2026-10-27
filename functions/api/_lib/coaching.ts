@@ -21,7 +21,19 @@
 // paragraph — short enough to fit in the HUD's fixed-width sidebar without
 // scrolling, and easy to scan at a glance rather than read like an essay.
 
+import { computeFacts, buildFactPrompt, signalSentence } from './facts'
+import { templateNote } from './template'
+import { validateModelWording } from './validate'
+
 const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8'
+
+export type Signals = {
+  avgCycleTimeDays: number
+  sprintCompletionPct: number
+  avgReviewTurnaroundHours: number
+  pctCommitsAfter7pm: number
+  avgMeetingHoursPerWeek: number
+}
 
 export type CoachingEvidence = {
   team: { name: string; cohort: { sizeBucket: string; functionType: string } }
@@ -29,17 +41,13 @@ export type CoachingEvidence = {
   score: number
   trend: number
   earlyWarning: boolean
-  signals: {
-    avgCycleTimeDays: number
-    sprintCompletionPct: number
-    avgReviewTurnaroundHours: number
-    pctCommitsAfter7pm: number
-    avgMeetingHoursPerWeek: number
-  }
-  peer?: { name: string; score: number; signals: CoachingEvidence['signals'] }
+  signals: Signals
+  prevSignals?: Signals | null // previous week, for ranking the biggest movers
+  peer?: { name: string; score: number; signals: Signals }
 }
 
 export type CoachingNote = { status: string; signal: string; action: string }
+export type GeneratedNote = CoachingNote & { source: 'model' | 'template' }
 
 // Exported for eval/'s harness (functions/api/_lib/app.ts's POST
 // /api/eval/insight, driven by scripts/evaluate-coaching.mjs) — evaluation
@@ -93,59 +101,70 @@ export function buildPrompt(ev: CoachingEvidence): string {
     lines.push(
       '',
       `Anonymized peer comparison (a team in the same size/function cohort, this week):`,
-      `- ${ev.peer.name.replace(/team/i, 'Peer Team')}: ${peerParts}`
+      `- ${ev.peer.name}: ${peerParts}`
     )
   }
   return lines.join('\n')
 }
 
-const SYSTEM_PROMPT = `You are a coaching assistant inside Growth, a tool engineering managers use to \
-monitor team health. You will be given this week's team-level metrics for ONE team, already \
-aggregated — you never see any individual person's data.
+// The model writes ONLY the wording (STATUS + ACTION). The ranking, the
+// numbers, and every peer comparison are decided in code (facts.ts) and the
+// SIGNAL line is code-generated, so the model cannot pick the wrong signal or
+// reverse a comparison — the two failures the report flagged.
+const FACT_SYSTEM_PROMPT = `You are a coaching assistant inside Growth, a tool engineering managers use to \
+monitor team health. You are given this week's team metrics, already aggregated and already ranked. \
+The single most important signal has already been chosen for you. Your only job is the wording.
 
-Reply with EXACTLY three lines, this format, nothing before or after:
-STATUS: <5 words max — the one-line verdict, e.g. "Worth investigating" or "Healthy, stable">
-SIGNAL: <under 18 words — the ONE signal that most explains this week's score, with the peer number for context>
-ACTION: <under 16 words — one concrete, specific next step for the manager>
+Reply with EXACTLY two lines, nothing before or after:
+STATUS: <5 words max — the verdict, e.g. "Worth investigating" or "Looks healthy, stable">
+ACTION: <under 16 words — one concrete next step for the manager about the most important signal>
 
 Rules, all mandatory:
-1. Only reference numbers and facts given to you below. Never invent a metric, a person, or a cause.
-2. Never diagnose burnout, predict attrition, or make any claim about a specific individual — you \
-only have team-level aggregates, so there is nothing individual to discuss anyway.
-3. Frame concern as "worth investigating," never as a certainty or verdict.
-4. Double-check any comparison you make against the peer's number is actually in the right direction \
-(a LOWER number than the peer is not "high" just because it's being mentioned).
-5. If early-warning is NOT triggered and the trend is stable or improving, STATUS should say so \
-plainly (e.g. "Healthy, stable") — do not manufacture concern out of a normal number.
-6. No markdown, no bullets, no extra commentary — exactly the three labeled lines above.`
+1. Do NOT include any numbers — the numbers are shown separately.
+2. Never mention burnout, attrition, or any individual person — you only have team-level aggregates.
+3. Frame any concern as "worth investigating," never as a certainty.
+4. If the early-warning state is "not triggered" and the trend is improving or holding steady, \
+STATUS must say the team looks healthy — do not manufacture concern.
+5. No markdown, no extra lines — exactly the two labeled lines above.`
 
-const LINE_PATTERN = /^(STATUS|SIGNAL|ACTION)\s*:\s*(.+)$/im
-
-function parseNote(raw: string): CoachingNote {
-  const note: CoachingNote = { status: '', signal: '', action: '' }
+function parseStatusAction(raw: string): { status: string; action: string } {
+  let status = ''
+  let action = ''
   for (const line of raw.split('\n')) {
-    const match = line.match(LINE_PATTERN)
-    if (!match) continue
-    const key = match[1].toLowerCase() as 'status' | 'signal' | 'action'
-    note[key] = match[2].trim()
+    const m = line.match(/^(STATUS|ACTION)\s*:\s*(.+)$/i)
+    if (!m) continue
+    if (m[1].toUpperCase() === 'STATUS') status = m[2].trim()
+    else action = m[2].trim()
   }
-  // Small models occasionally drop the labels — fall back to showing
-  // whatever text came back rather than three blank lines.
-  if (!note.status && !note.signal && !note.action) {
-    note.signal = raw.trim().slice(0, 200)
-  }
-  return note
+  return { status, action }
 }
 
-export async function generateCoachingNote(ai: Ai, evidence: CoachingEvidence): Promise<CoachingNote> {
-  const result = await ai.run(MODEL, {
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: buildPrompt(evidence) },
-    ],
-    max_tokens: 110,
-  })
-  const text = (result as { response?: string }).response
-  if (!text) throw new Error('Workers AI returned no response text')
-  return parseNote(text)
+// Always returns a note. If the AI call fails or its wording doesn't pass
+// validation, the deterministic template note is returned instead (source
+// says which), so a bad or missing model response degrades to a safe,
+// fully-grounded note rather than an error or a misleading claim.
+export async function generateCoachingNote(ai: Ai, evidence: CoachingEvidence): Promise<GeneratedNote> {
+  const facts = computeFacts(evidence)
+  const fallback: GeneratedNote = { ...templateNote(facts), source: 'template' }
+
+  try {
+    const result = await ai.run(MODEL, {
+      messages: [
+        { role: 'system', content: FACT_SYSTEM_PROMPT },
+        { role: 'user', content: buildFactPrompt(facts) },
+      ],
+      max_tokens: 200,
+      temperature: 0,
+    })
+    const text = (result as { response?: string }).response
+    if (!text) return fallback
+
+    const parts = parseStatusAction(text)
+    const check = validateModelWording(parts, facts)
+    if (!check.ok) return fallback
+
+    return { status: parts.status, signal: signalSentence(facts), action: parts.action, source: 'model' }
+  } catch {
+    return fallback
+  }
 }

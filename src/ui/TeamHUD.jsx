@@ -13,15 +13,22 @@ import {
 import { useAppStore } from '../store/appStore'
 import { useTeamsStore, listTeams } from '../store/teamsStore'
 import { useSignalsStore } from '../store/signalsStore'
+import { useAuthStore } from '../store/authStore'
 import { getTeamWeek } from '../logic/teamHealth'
 import { levelFor } from '../logic/buildingStatus'
-import { SignalPill, JiraDetailsList, CalendarDetailsList } from './SignalPill'
+import { SignalPill } from './SignalPill'
 import ConnectCalendar from './ConnectCalendar'
 import CoachingNote from './CoachingNote'
 import './hud.css'
 
 const RING_RADIUS = 24
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS
+
+// Provenance tag shown on a signal pill: where this week's number came from.
+function SourceTag({ state }) {
+  if (!state) return null
+  return <span className={`hud-source-tag hud-source-tag--${state}`}>{state}</span>
+}
 
 export default function TeamHUD() {
   const currentTeam = useAppStore((s) => s.currentTeam)
@@ -39,11 +46,11 @@ export default function TeamHUD() {
 
   const teams = useTeamsStore(useShallow(listTeams))
   const updateTeam = useTeamsStore((s) => s.updateTeam)
+  const readOnly = useAuthStore((s) => s.role) !== 'manager' // leadership can't edit teams
   // Subscribed purely so this re-renders once signals finish loading async
   // (getTeamWeek below reads the store imperatively, not reactively).
   const signalSource = useSignalsStore((s) => s.sourceByTeam[currentTeam])
 
-  const [expandedSignal, setExpandedSignal] = useState(null) // 'jira' | 'calendar' | null
   const [editingId, setEditingId] = useState(null) // null = create mode
   const [name, setName] = useState('')
   const [sizeBucket, setSizeBucket] = useState('')
@@ -68,10 +75,6 @@ export default function TeamHUD() {
     const timer = setTimeout(() => setConfirmDeleteId(null), 2600)
     return () => clearTimeout(timer)
   }, [confirmDeleteId])
-
-  function toggleSignal(signal) {
-    setExpandedSignal((current) => (current === signal ? null : signal))
-  }
 
   function closeComposer() {
     closeTeamComposer()
@@ -154,7 +157,7 @@ export default function TeamHUD() {
                   </span>
                 )}
               </button>
-              {!isCompare && (
+              {!isCompare && !readOnly && (
                 <span className="hud-team-actions">
                   <button
                     className="hud-team-edit"
@@ -178,7 +181,7 @@ export default function TeamHUD() {
           )
         })}
 
-        {!isCompare && (
+        {!isCompare && !readOnly && (
           <button
             className={`hud-team-add${teamComposerOpen ? ' hud-team-add--open' : ''}`}
             onClick={toggleComposer}
@@ -189,7 +192,7 @@ export default function TeamHUD() {
           </button>
         )}
 
-        {!isCompare && (
+        {!isCompare && !readOnly && (
           <div
             className={`hud-team-composer-wrap${
               teamComposerOpen ? ' hud-team-composer-wrap--open' : ''
@@ -279,20 +282,11 @@ export default function TeamHUD() {
         </div>
       )}
 
-      {!isCompare && weekHealth && signalSource === 'generated' && (
-        <div className="hud-signal hud-signal--muted glass">
-          Demo data — no live integration connected yet
-        </div>
-      )}
-
       {!isCompare && weekHealth && (
         <SignalPill
           icon={<Ticket size={15} />}
           label={`Jira: ${weekHealth.signals.jira.avgCycleTimeDays}d cycle · ${weekHealth.signals.jira.sprintCompletionPct}% sprint`}
-          details={weekHealth.signals.jira.details}
-          renderDetails={(d) => <JiraDetailsList details={d} />}
-          expanded={expandedSignal === 'jira'}
-          onToggle={() => toggleSignal('jira')}
+          tag={<SourceTag state={weekHealth.sources?.jira} />}
         />
       )}
 
@@ -300,15 +294,18 @@ export default function TeamHUD() {
         <SignalPill
           icon={<CalendarDays size={15} />}
           label={`Meeting load: ${weekHealth.signals.calendar.avgMeetingHoursPerWeek}h this week`}
-          details={weekHealth.signals.calendar.details}
-          renderDetails={(d) => <CalendarDetailsList details={d} />}
-          expanded={expandedSignal === 'calendar'}
-          onToggle={() => toggleSignal('calendar')}
+          tag={<SourceTag state={weekHealth.sources?.calendar} />}
         />
       )}
 
-      {!isCompare && weekHealth && (
-        <CoachingNote teamId={currentTeam} currentWeek={currentWeek} weekHealth={weekHealth} />
+      {/* Coaching is only meaningful on live data; demo/generated teams show why. */}
+      {!isCompare && weekHealth && signalSource === 'live' && (
+        <CoachingNote teamId={currentTeam} weekHealth={weekHealth} />
+      )}
+      {!isCompare && weekHealth && signalSource && signalSource !== 'live' && (
+        <div className="hud-signal hud-signal--muted glass">
+          AI coaching needs a team with live data (this team is {signalSource === 'generated' ? 'demo' : 'sample'} data).
+        </div>
       )}
 
       {!isCompare && <ConnectCalendar />}

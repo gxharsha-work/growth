@@ -12,6 +12,7 @@ import { useVillageStore } from './store/villageStore'
 import { useAppStore } from './store/appStore'
 import { useTeamsStore } from './store/teamsStore'
 import { useSignalsStore } from './store/signalsStore'
+import { useAuthStore } from './store/authStore'
 import { getTeamWeek } from './logic/teamHealth'
 import './App.css'
 
@@ -41,6 +42,7 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     async function bootstrap() {
+      useAuthStore.getState().loadRole()
       await useTeamsStore.getState().hydrate()
       if (cancelled) return
       const ids = Object.keys(useTeamsStore.getState().teams)

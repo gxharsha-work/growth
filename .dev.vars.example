@@ -1,0 +1,10 @@
+# Copy to .dev.vars for `wrangler pages dev`. Never commit .dev.vars.
+
+# Local-only login bypass. Ignored when ENVIRONMENT=production.
+# Options: manager | leadership. Leave unset to require a real Access JWT.
+DEV_AUTH_ROLE=manager
+
+# Cloudflare Access values. PLACEHOLDERS until the Access app is configured.
+# Required in production; without them every request is rejected with 401.
+ACCESS_TEAM_DOMAIN=your-team.cloudflareaccess.com
+ACCESS_AUD=replace-with-access-application-aud-tag

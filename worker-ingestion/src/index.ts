@@ -33,9 +33,17 @@ async function ingest(env: Env): Promise<string[]> {
   const teamId = env.PILOT_TEAM_ID
 
   try {
-    const jira = await runJiraIngestion(env, log)
-    await upsertSignalWeek(env.DB, teamId, isoWeek, 'jira', jira)
-    log.push(`✓ jira signals written for ${teamId} ${isoWeek}`)
+    // One row per sprint, keyed by the sprint's start ISO week so daily re-runs
+    // overwrite that sprint's row (boundary-aligned) instead of scattering
+    // mid-sprint snapshots across whichever week the cron fired in. The sprint
+    // metadata rides in the payload; signals.ts reads it to fold calendar weeks
+    // into each sprint window.
+    const sprintResults = await runJiraIngestion(env, log)
+    for (const { sprint, jira } of sprintResults) {
+      const sprintWeek = sprint.startDate ? getIsoWeek(new Date(sprint.startDate)) : isoWeek
+      await upsertSignalWeek(env.DB, teamId, sprintWeek, 'jira', { ...jira, sprint })
+    }
+    log.push(`✓ jira signals written for ${teamId}: ${sprintResults.length} sprint(s)`)
   } catch (err) {
     log.push(`✗ jira ingestion failed: ${(err as Error).message}`)
   }

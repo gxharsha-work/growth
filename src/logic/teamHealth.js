@@ -36,14 +36,16 @@ export function getTeamWeeklyHealth(teamId) {
   const weeks = useSignalsStore.getState().weeklyByTeam[teamId] ?? []
   if (weeks.length === 0) return []
 
-  const scores = weeks.map(computeHealthScore)
+  const scores = weeks.map((w) => computeHealthScore(w, w.sources))
   const capabilityScores = weeks.map(computeCapabilityScore)
 
   const rows = weeks.map((signals, i) => {
     const earlyWarning = isEarlyWarning(scores, i)
     return {
       week: signals.week,
+      period: signals.period ?? null, // sprint/week label for the timeline
       signals,
+      sources: signals.sources ?? null, // provenance, for the HUD source tags
       score: scores[i],
       earlyWarning,
       capabilityScore: capabilityScores[i],
