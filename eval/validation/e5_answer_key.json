@@ -1,0 +1,92 @@
+[
+  {
+    "set": "A",
+    "team": "Team A1",
+    "truth": "at-risk",
+    "scenario": "key_person_departure",
+    "severity": "clear",
+    "seed": 20000101,
+    "eventStartsAtDisplayedWeek": 4
+  },
+  {
+    "set": "A",
+    "team": "Team A2",
+    "truth": "at-risk",
+    "scenario": "meeting_surge",
+    "severity": "clear",
+    "seed": 20000202,
+    "eventStartsAtDisplayedWeek": 4
+  },
+  {
+    "set": "A",
+    "team": "Team A3",
+    "truth": "benign (planned, not at-risk)",
+    "scenario": "planned_hardening_sprint",
+    "severity": "-",
+    "seed": 20000303,
+    "eventStartsAtDisplayedWeek": 4
+  },
+  {
+    "set": "A",
+    "team": "Team A4",
+    "truth": "healthy (typical)",
+    "scenario": "healthy",
+    "severity": "-",
+    "seed": 20000404,
+    "eventStartsAtDisplayedWeek": null
+  },
+  {
+    "set": "A",
+    "team": "Team A5",
+    "truth": "healthy (better than cohort)",
+    "scenario": "healthy",
+    "severity": "-",
+    "seed": 20000505,
+    "eventStartsAtDisplayedWeek": null
+  },
+  {
+    "set": "B",
+    "team": "Team B1",
+    "truth": "at-risk",
+    "scenario": "slow_burnout",
+    "severity": "clear",
+    "seed": 20000606,
+    "eventStartsAtDisplayedWeek": 4
+  },
+  {
+    "set": "B",
+    "team": "Team B2",
+    "truth": "at-risk",
+    "scenario": "knowledge_concentration",
+    "severity": "clear",
+    "seed": 20000707,
+    "eventStartsAtDisplayedWeek": 4
+  },
+  {
+    "set": "B",
+    "team": "Team B3",
+    "truth": "benign (holiday, not at-risk)",
+    "scenario": "holiday_week",
+    "severity": "-",
+    "seed": 20000808,
+    "eventStartsAtDisplayedWeek": 4
+  },
+  {
+    "set": "B",
+    "team": "Team B4",
+    "truth": "healthy (typical)",
+    "scenario": "healthy",
+    "severity": "-",
+    "seed": 20000909,
+    "eventStartsAtDisplayedWeek": null
+  },
+  {
+    "set": "B",
+    "team": "Team B5",
+    "truth": "healthy (better than cohort)",
+    "scenario": "healthy",
+    "severity": "-",
+    "seed": 20001010,
+    "eventStartsAtDisplayedWeek": null
+  }
+]
