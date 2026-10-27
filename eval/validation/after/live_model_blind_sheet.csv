@@ -1,0 +1,13 @@
+case,context,note_A_action,note_B_action,preferred(A/B),actionability_A(1-5),actionability_B(1-5),grounded_A(1-5),grounded_B(1-5)
+"backend-w5","concern; Meeting load 10.2h/wk","Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.","Audit recurring meetings for any that can be dropped.",,,,,
+"backend-w6","concern; Review turnaround 17.0h","Investigate and discuss with the team the root cause of the prolonged review turnaround times.","Spread review load or agree a review turnaround target.",,,,,
+"backend-w7","concern; Review turnaround 21.0h","Spread review load or agree a review turnaround target.","Schedule a meeting with the team to discuss and set a goal to reduce review turnaround time to peer average within the next two weeks.",,,,,
+"backend-w8","concern; Review turnaround 26.0h","Schedule a meeting with the team to discuss and set a goal for reducing review turnaround time to peer average within the next sprint.","Spread review load or agree a review turnaround target.",,,,,
+"team-a1-w8","low; Meeting load 6.8h/wk","Schedule a meeting with the team to discuss and set realistic meeting load expectations and boundaries.","Audit recurring meetings for any that can be dropped.",,,,,
+"team-a2-w5","steady; Meeting load 11.8h/wk","Audit recurring meetings for any that can be dropped.","Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.",,,,,
+"team-a3-w8","steady; Cycle time 6.2d","Investigate the root cause of the prolonged cycle time to identify areas for process improvement.","Review what is slowing tickets from start to done.",,,,,
+"team-b2-w5","concern; Review turnaround 26.2h","Schedule a meeting with the team to discuss and set realistic review turnaround goals and expectations.","Spread review load or agree a review turnaround target.",,,,,
+"team-b3-w5","steady; Meeting load 7.2h/wk","Audit recurring meetings for any that can be dropped.","Schedule a meeting with the team to discuss and adjust meeting load to optimize team capacity and efficiency.",,,,,
+"team-b3-w8","steady; Sprint completion 71%","Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.","Check scope and blockers on the unfinished sprint work.",,,,,
+"team-b4-w5","steady; After-hours commits 7%","Check whether deadlines are pushing work late in the day.","Schedule a meeting with the team to discuss and establish a plan to reduce after-hours commits.",,,,,
+"team-b4-w8","steady; Sprint completion 70%","Check scope and blockers on the unfinished sprint work.","Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",,,,,

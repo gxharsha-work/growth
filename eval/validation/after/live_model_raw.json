@@ -1,0 +1,581 @@
+[
+  {
+    "id": "platform-w1",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w1",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "platform-w2",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w2",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "platform-w3",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w3",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "platform-w4",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w4",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "platform-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w5",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.",
+        "reason": "",
+        "ms": 1576
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and potential adjustments.",
+        "reason": "",
+        "ms": 1100
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and potential adjustments.",
+        "reason": "",
+        "ms": 1036
+      }
+    ]
+  },
+  {
+    "id": "platform-w6",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w6",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Investigate and discuss with the team the root cause of the prolonged review turnaround times.",
+        "reason": "",
+        "ms": 1625
+      },
+      {
+        "source": "model",
+        "raw": "Investigate and discuss with the team the root cause of the prolonged review turnaround times.",
+        "reason": "",
+        "ms": 1395
+      },
+      {
+        "source": "model",
+        "raw": "Investigate and discuss with the team the root cause of the prolonged review turnaround times.",
+        "reason": "",
+        "ms": 1479
+      }
+    ]
+  },
+  {
+    "id": "platform-w7",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w7",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set a goal to reduce review turnaround time to peer average within the next two weeks.",
+        "reason": "",
+        "ms": 1983
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set a goal to reduce review turnaround time to peer average within the next two weeks.",
+        "reason": "",
+        "ms": 1663
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set a goal to reduce review turnaround time to peer average within the next two weeks.",
+        "reason": "",
+        "ms": 1657
+      }
+    ]
+  },
+  {
+    "id": "platform-w8",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w8",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set a goal for reducing review turnaround time to peer average within the next sprint.",
+        "reason": "",
+        "ms": 2259
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set a goal for reducing review turnaround time to peer average within the next sprint.",
+        "reason": "",
+        "ms": 1582
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set a goal for reducing review turnaround time to peer average within the next sprint.",
+        "reason": "",
+        "ms": 2028
+      }
+    ]
+  },
+  {
+    "id": "team-a1-w5",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "template",
+        "raw": "Investigate the root cause of the 7.1-day cycle time to identify areas for process improvement.",
+        "reason": "number 7.1 is not attached to a known field",
+        "ms": 1425
+      },
+      {
+        "source": "template",
+        "raw": "Investigate the root cause of the 7.1-day cycle time to identify areas for process improvement.",
+        "reason": "number 7.1 is not attached to a known field",
+        "ms": 1467
+      },
+      {
+        "source": "template",
+        "raw": "Investigate the root cause of the 7.1-day cycle time to identify areas for process improvement.",
+        "reason": "number 7.1 is not attached to a known field",
+        "ms": 1991
+      }
+    ]
+  },
+  {
+    "id": "team-a1-w8",
+    "status": "low",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and boundaries.",
+        "reason": "",
+        "ms": 1180
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and boundaries.",
+        "reason": "",
+        "ms": 1283
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load expectations and boundaries.",
+        "reason": "",
+        "ms": 1236
+      }
+    ]
+  },
+  {
+    "id": "team-a2-w5",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.",
+        "reason": "",
+        "ms": 1463
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.",
+        "reason": "",
+        "ms": 1320
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic meeting load targets for the upcoming week.",
+        "reason": "",
+        "ms": 1590
+      }
+    ]
+  },
+  {
+    "id": "team-a2-w8",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "template",
+        "raw": "Investigate the root cause of the 7.3-day cycle time to identify potential bottlenecks and inefficiencies.",
+        "reason": "number 7.3 is not attached to a known field",
+        "ms": 1709
+      },
+      {
+        "source": "template",
+        "raw": "Investigate the root cause of the 7.3-day cycle time to identify potential bottlenecks and inefficiencies.",
+        "reason": "number 7.3 is not attached to a known field",
+        "ms": 1570
+      },
+      {
+        "source": "template",
+        "raw": "Investigate the root cause of the 7.3-day cycle time to identify potential bottlenecks and inefficiencies.",
+        "reason": "number 7.3 is not attached to a known field",
+        "ms": 1258
+      }
+    ]
+  },
+  {
+    "id": "team-a3-w5",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "template",
+        "raw": "Schedule a meeting with the team to discuss and establish clear boundaries around work hours and expectations.",
+        "reason": "does not address the decided signal",
+        "ms": 1015
+      },
+      {
+        "source": "template",
+        "raw": "Schedule a meeting with the team to discuss and establish clear boundaries around work hours and expectations.",
+        "reason": "does not address the decided signal",
+        "ms": 1217
+      },
+      {
+        "source": "template",
+        "raw": "Schedule a meeting with the team to discuss and establish clear boundaries around work hours and expectations.",
+        "reason": "does not address the decided signal",
+        "ms": 1165
+      }
+    ]
+  },
+  {
+    "id": "team-a3-w8",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Investigate the root cause of the prolonged cycle time to identify areas for process improvement.",
+        "reason": "",
+        "ms": 1099
+      },
+      {
+        "source": "model",
+        "raw": "Investigate the root cause of the prolonged cycle time to identify areas for process improvement.",
+        "reason": "",
+        "ms": 1202
+      },
+      {
+        "source": "model",
+        "raw": "Investigate the root cause of the prolonged cycle time to identify areas for process improvement.",
+        "reason": "",
+        "ms": 997
+      }
+    ]
+  },
+  {
+    "id": "team-a4-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-a4-w8",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-a5-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-a5-w8",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-b1-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-b1-w8",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "template",
+        "raw": "Schedule a team meeting to discuss and establish a plan to reduce after-hours commits by 20% within the next two weeks.",
+        "reason": "number 20 does not match afterHoursCommits",
+        "ms": 1539
+      },
+      {
+        "source": "template",
+        "raw": "Schedule a team meeting to discuss and establish a plan to reduce after-hours commits by 20% within the next two weeks.",
+        "reason": "number 20 does not match afterHoursCommits",
+        "ms": 1833
+      },
+      {
+        "source": "template",
+        "raw": "Schedule a team meeting to discuss and establish a plan to reduce after-hours commits by 20% within the next two weeks.",
+        "reason": "number 20 does not match afterHoursCommits",
+        "ms": 1255
+      }
+    ]
+  },
+  {
+    "id": "team-b2-w5",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic review turnaround goals and expectations.",
+        "reason": "",
+        "ms": 1324
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic review turnaround goals and expectations.",
+        "reason": "",
+        "ms": 1385
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic review turnaround goals and expectations.",
+        "reason": "",
+        "ms": 1645
+      }
+    ]
+  },
+  {
+    "id": "team-b2-w8",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "template",
+        "raw": "Investigate the root cause of the 4.3-day cycle time to identify areas for improvement.",
+        "reason": "number 4.3 is not attached to a known field",
+        "ms": 1113
+      },
+      {
+        "source": "template",
+        "raw": "Investigate the root cause of the 4.3-day cycle time to identify areas for improvement.",
+        "reason": "number 4.3 is not attached to a known field",
+        "ms": 1336
+      },
+      {
+        "source": "template",
+        "raw": "Investigate the root cause of the 4.3-day cycle time to identify areas for improvement.",
+        "reason": "number 4.3 is not attached to a known field",
+        "ms": 1652
+      }
+    ]
+  },
+  {
+    "id": "team-b3-w5",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and adjust meeting load to optimize team capacity and efficiency.",
+        "reason": "",
+        "ms": 1467
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and adjust meeting load to optimize team capacity and efficiency.",
+        "reason": "",
+        "ms": 1361
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and adjust meeting load to optimize team capacity and efficiency.",
+        "reason": "",
+        "ms": 1478
+      }
+    ]
+  },
+  {
+    "id": "team-b3-w8",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
+        "reason": "",
+        "ms": 1289
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
+        "reason": "",
+        "ms": 1234
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
+        "reason": "",
+        "ms": 1543
+      }
+    ]
+  },
+  {
+    "id": "team-b4-w5",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and establish a plan to reduce after-hours commits.",
+        "reason": "",
+        "ms": 1414
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and establish a plan to reduce after-hours commits.",
+        "reason": "",
+        "ms": 1752
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a meeting with the team to discuss and set realistic goals for reducing after-hours commits.",
+        "reason": "",
+        "ms": 2719
+      }
+    ]
+  },
+  {
+    "id": "team-b4-w8",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
+        "reason": "",
+        "ms": 1714
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
+        "reason": "",
+        "ms": 1100
+      },
+      {
+        "source": "model",
+        "raw": "Schedule a team meeting to discuss and explore strategies to improve sprint completion rates.",
+        "reason": "",
+        "ms": 1329
+      }
+    ]
+  },
+  {
+    "id": "team-b5-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-b5-w8",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  }
+]
