@@ -214,12 +214,33 @@ function buildSprintRows(jiraRows: SprintRow[], calendarRows: CalRow[]): Aligned
 // rows are aligned to sprint boundaries and the weekly calendar rows fold into
 // each sprint window; otherwise it falls back to the legacy ISO-week join so
 // older rows still merge. Keep in sync with src/data/mockSignals.js.
+const isFinite_ = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+function parseRow<T>(r: Row): T | null {
+  try {
+    return JSON.parse(r.payload) as T
+  } catch {
+    console.warn(`signal_weeks: skipping unreadable ${r.source} row for ${r.iso_week}`)
+    return null
+  }
+}
+// A row that is not usable numbers is treated as missing, never as data (a NaN must not read as "healthy").
+const validJira = (j: any): j is JiraSignal => !!j && isFinite_(j.issueCount) && isFinite_(j.avgCycleTimeDays) && isFinite_(j.sprintCompletionPct)
+const validCalendar = (c: any): c is CalendarSignal => !!c && isFinite_(c.avgMeetingHoursPerWeek)
+// A sprint with no issues has no cycle time: 0 days would otherwise score as perfect.
+const jiraState = (j: JiraSignal): SourceState => (j.issueCount > 0 ? 'live' : 'placeholder')
+
 function mergeIngestedRows(rows: Row[]): WeekSignals[] {
   const jiraByWeek = new Map<string, JiraSignal>()
   const calendarByWeek = new Map<string, CalendarSignal>()
   for (const r of rows) {
-    if (r.source === 'jira') jiraByWeek.set(r.iso_week, JSON.parse(r.payload))
-    if (r.source === 'calendar') calendarByWeek.set(r.iso_week, JSON.parse(r.payload))
+    if (r.source === 'jira') {
+      const j = parseRow<JiraSignal>(r)
+      if (validJira(j)) jiraByWeek.set(r.iso_week, j)
+    }
+    if (r.source === 'calendar') {
+      const c = parseRow<CalendarSignal>(r)
+      if (validCalendar(c)) calendarByWeek.set(r.iso_week, c)
+    }
   }
 
   const jiraPayloads = [...jiraByWeek.values()]
@@ -241,7 +262,7 @@ function mergeIngestedRows(rows: Row[]): WeekSignals[] {
       github: PENDING_GITHUB,
       calendar: r.calendar ?? PENDING_CALENDAR,
       sources: {
-        jira: 'live',
+        jira: jiraState(r.jira),
         github: 'placeholder',
         calendar: r.hasCalendar ? 'live' : 'placeholder',
       } as WeekSources,
@@ -259,7 +280,7 @@ function mergeIngestedRows(rows: Row[]): WeekSignals[] {
         github: PENDING_GITHUB, // GitHub isn't connected yet — a placeholder
         calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
         sources: {
-          jira: 'live',
+          jira: jiraState(jiraByWeek.get(isoWeek)!),
           github: 'placeholder',
           calendar: hasCalendar ? 'live' : 'placeholder',
         } as WeekSources,

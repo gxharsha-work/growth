@@ -20,6 +20,9 @@ export type AuthEnv = {
 
 export type AuthedUser = { email: string; role: Role }
 
+// The Access key server could not be reached: fail closed, but say so (503) rather than crash.
+export class AuthUnavailableError extends Error {}
+
 type Jwk = { kid: string; kty: string; n: string; e: string; alg?: string }
 
 let jwksCache: { domain: string; keys: Jwk[]; fetchedAt: number } | null = null
@@ -42,8 +45,13 @@ async function getKeys(domain: string): Promise<Jwk[]> {
   if (jwksCache && jwksCache.domain === domain && Date.now() - jwksCache.fetchedAt < JWKS_TTL_MS) {
     return jwksCache.keys
   }
-  const res = await fetch(`https://${domain}/cdn-cgi/access/certs`)
-  if (!res.ok) throw new Error(`failed to fetch Access certs (${res.status})`)
+  let res: Response
+  try {
+    res = await fetch(`https://${domain}/cdn-cgi/access/certs`)
+  } catch {
+    throw new AuthUnavailableError('Access certs unreachable')
+  }
+  if (!res.ok) throw new AuthUnavailableError(`Access certs returned ${res.status}`)
   const body = (await res.json()) as { keys: Jwk[] }
   jwksCache = { domain, keys: body.keys, fetchedAt: Date.now() }
   return body.keys
@@ -98,7 +106,7 @@ export async function lookupRole(db: D1Database, email: string): Promise<Role | 
 export async function resolveUser(
   headers: Headers,
   env: AuthEnv
-): Promise<{ user: AuthedUser | null; unauthenticated: boolean }> {
+): Promise<{ user: AuthedUser | null; unauthenticated: boolean; unavailable?: boolean }> {
   if (env.ENVIRONMENT !== 'production' && env.DEV_AUTH_ROLE) {
     const role = env.DEV_AUTH_ROLE as Role
     return { user: { email: 'dev@localhost', role }, unauthenticated: false }
@@ -107,7 +115,14 @@ export async function resolveUser(
   const token = headers.get('Cf-Access-JWT-Assertion')
   if (!token) return { user: null, unauthenticated: true }
 
-  const email = await verifyAccessJwt(token, env)
+  // A malformed or unverifiable token is simply "not signed in" (401), never a crash.
+  let email: string | null = null
+  try {
+    email = await verifyAccessJwt(token, env)
+  } catch (err) {
+    if (err instanceof AuthUnavailableError) return { user: null, unauthenticated: true, unavailable: true }
+    return { user: null, unauthenticated: true }
+  }
   if (!email) return { user: null, unauthenticated: true }
 
   const role = await lookupRole(env.DB, email)

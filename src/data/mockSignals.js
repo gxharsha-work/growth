@@ -101,7 +101,8 @@ function buildLiveTeam(jiraRows, calendarRows) {
       github: PENDING_GITHUB,
       calendar: r.calendar ?? PENDING_CALENDAR,
       sources: {
-        jira: 'live',
+        // a sprint with no issues has no cycle time: missing data, not a perfect 0 days (mirrors signals.ts)
+        jira: r.jira.issueCount > 0 ? 'live' : 'placeholder',
         github: 'placeholder',
         calendar: r.hasCalendar ? 'live' : 'placeholder',
       },
@@ -118,7 +119,7 @@ function buildLiveTeam(jiraRows, calendarRows) {
     github: PENDING_GITHUB,
     calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
     sources: {
-      jira: 'live',
+      jira: jiraByWeek.get(isoWeek).issueCount > 0 ? 'live' : 'placeholder',
       github: 'placeholder',
       calendar: calendarByWeek.has(isoWeek) ? 'live' : 'placeholder',
     },
