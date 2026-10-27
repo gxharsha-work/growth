@@ -5,7 +5,7 @@
       "sprint": {
         "id": 2,
         "name": "SCRUM Sprint 0",
-        "state": "active",
+        "state": "closed",
         "startDate": "2026-09-15T19:19:49.810Z",
         "endDate": "2026-09-29T19:19:49.810Z"
       },
@@ -16,16 +16,14 @@
         "details": [
           {
             "key": "SCRUM-14",
-            "summary": "TikTok Spark Ads creative testing",
             "status": "Testing",
             "countsAsDone": false,
-            "cycleTimeDays": 20.47,
+            "cycleTimeDays": 41.32,
             "isProxy": true,
             "excludedReason": null
           },
           {
             "key": "SCRUM-13",
-            "summary": "Launch Meta Advantage+ shopping campaign",
             "status": "Done",
             "countsAsDone": true,
             "cycleTimeDays": 4.04,
@@ -34,25 +32,22 @@
           },
           {
             "key": "SCRUM-11",
-            "summary": "Rewrite copy for 10 highest-traffic category pages",
             "status": "In Progress",
             "countsAsDone": false,
-            "cycleTimeDays": 20.47,
+            "cycleTimeDays": 41.32,
             "isProxy": true,
             "excludedReason": null
           },
           {
             "key": "SCRUM-10",
-            "summary": "Keyword & content gap analysis",
             "status": "In Progress",
             "countsAsDone": false,
-            "cycleTimeDays": 16.42,
+            "cycleTimeDays": 37.28,
             "isProxy": true,
             "excludedReason": null
           },
           {
             "key": "SCRUM-2",
-            "summary": "[Legacy] Audit old affiliate partnerships",
             "status": "To Do",
             "countsAsDone": false,
             "cycleTimeDays": null,
@@ -61,12 +56,164 @@
           },
           {
             "key": "SCRUM-1",
-            "summary": "[Legacy] Migrate old blog CMS",
             "status": "Idea",
             "countsAsDone": false,
             "cycleTimeDays": null,
             "isProxy": null,
             "excludedReason": "never entered In Progress/Testing"
+          }
+        ]
+      }
+    },
+    {
+      "week": 2,
+      "sprint": {
+        "id": 1,
+        "name": "Sprint 1 - Tracking & Referral",
+        "state": "active",
+        "startDate": "2026-10-13T09:00:00.000Z",
+        "endDate": "2026-10-27T17:00:00.000Z"
+      },
+      "jira": {
+        "issueCount": 17,
+        "avgCycleTimeDays": 0,
+        "sprintCompletionPct": 41,
+        "details": [
+          {
+            "key": "SCRUM-28",
+            "status": "In Progress",
+            "countsAsDone": false,
+            "cycleTimeDays": 0,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-27",
+            "status": "In Progress",
+            "countsAsDone": false,
+            "cycleTimeDays": 0,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-26",
+            "status": "Done",
+            "countsAsDone": true,
+            "cycleTimeDays": 0,
+            "isProxy": false,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-25",
+            "status": "Done",
+            "countsAsDone": true,
+            "cycleTimeDays": 0,
+            "isProxy": false,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-24",
+            "status": "Done",
+            "countsAsDone": true,
+            "cycleTimeDays": 0,
+            "isProxy": false,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-23",
+            "status": "Done",
+            "countsAsDone": true,
+            "cycleTimeDays": 0,
+            "isProxy": false,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-22",
+            "status": "Done",
+            "countsAsDone": true,
+            "cycleTimeDays": 0,
+            "isProxy": false,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-21",
+            "status": "Done",
+            "countsAsDone": true,
+            "cycleTimeDays": 0,
+            "isProxy": false,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-19",
+            "status": "To Do",
+            "countsAsDone": false,
+            "cycleTimeDays": null,
+            "isProxy": null,
+            "excludedReason": "never entered In Progress/Testing"
+          },
+          {
+            "key": "SCRUM-18",
+            "status": "In Progress",
+            "countsAsDone": false,
+            "cycleTimeDays": 0,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-17",
+            "status": "Testing",
+            "countsAsDone": false,
+            "cycleTimeDays": 0,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-16",
+            "status": "Done",
+            "countsAsDone": true,
+            "cycleTimeDays": 0,
+            "isProxy": false,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-15",
+            "status": "In Progress",
+            "countsAsDone": false,
+            "cycleTimeDays": 0,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-14",
+            "status": "Testing",
+            "countsAsDone": false,
+            "cycleTimeDays": 41.32,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-12",
+            "status": "Idea",
+            "countsAsDone": false,
+            "cycleTimeDays": null,
+            "isProxy": null,
+            "excludedReason": "never entered In Progress/Testing"
+          },
+          {
+            "key": "SCRUM-11",
+            "status": "In Progress",
+            "countsAsDone": false,
+            "cycleTimeDays": 41.32,
+            "isProxy": true,
+            "excludedReason": null
+          },
+          {
+            "key": "SCRUM-10",
+            "status": "In Progress",
+            "countsAsDone": false,
+            "cycleTimeDays": 37.28,
+            "isProxy": true,
+            "excludedReason": null
           }
         ]
       }

@@ -115,7 +115,7 @@ export async function runJiraIngestion(env: JiraEnv, log: string[]): Promise<Jir
       const cycle = cycleResults.find((r) => r.key === issue.key)!
       return {
         key: issue.key,
-        summary: issue.fields.summary,
+        // The ticket summary is deliberately not stored (FR17: team-level aggregates only).
         status: issue.fields.status.name,
         countsAsDone: issue.fields.status.statusCategory.key === 'done',
         cycleTimeDays: cycle.include ? Math.round(cycle.days * 100) / 100 : null,

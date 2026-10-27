@@ -171,7 +171,8 @@ async function computeSprintJira(sprint, issues) {
     const cycle = cycleResults.find((r) => r.key === issue.key)
     return {
       key: issue.key,
-      summary: issue.fields.summary,
+      // NOTE: the ticket summary is deliberately NOT stored. It is raw text about the work, this file is
+      // bundled into the browser, and nothing needs it (FR17: team-level aggregates only).
       status: issue.fields.status.name,
       countsAsDone: issue.fields.status.statusCategory.key === 'done',
       cycleTimeDays: cycle.include ? Math.round(cycle.days * 100) / 100 : null,

@@ -16,7 +16,7 @@ import { buildEvidence } from './evidence'
 import { resolveUser, type AuthEnv, type AuthedUser } from './auth'
 import { checkCoachingRateLimit } from './ratelimit'
 
-type Env = AuthEnv & { AI: Ai }
+type Env = AuthEnv & { AI: Ai; AI_TIMEOUT_MS?: string }
 type Vars = { user: AuthedUser }
 
 type TeamRow = {
@@ -77,6 +77,18 @@ function makeId(prefix: string) {
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>().basePath('/api')
 
+// Field limits: the frontend caps these, the API must too (a client is not the only caller).
+const MAX_NAME = 80
+const MAX_SHORT = 60
+const MAX_NOTES = 2000
+
+// Every failure is a JSON body, never an HTML page or a stack trace.
+app.onError((err, c) => {
+  if (err instanceof SyntaxError) return c.json({ error: 'invalid JSON body' }, 400)
+  console.error('unhandled API error', err)
+  return c.json({ error: 'internal error' }, 500)
+})
+
 // Dev/eval tool: hidden entirely in production (404 before auth, so it is not even discoverable).
 app.use('/eval/*', async (c, next) => {
   if (c.env.ENVIRONMENT === 'production') return c.json({ error: 'not found' }, 404)
@@ -86,7 +98,8 @@ app.use('/eval/*', async (c, next) => {
 // Every route needs an authenticated, role-assigned user. Writes and the AI
 // call require 'manager'; 'leadership' is read-only.
 app.use('*', async (c, next) => {
-  const { user, unauthenticated } = await resolveUser(c.req.raw.headers, c.env)
+  const { user, unauthenticated, unavailable } = await resolveUser(c.req.raw.headers, c.env)
+  if (unavailable) return c.json({ error: 'authentication service unavailable' }, 503)
   if (unauthenticated) return c.json({ error: 'not signed in' }, 401)
   if (!user) return c.json({ error: 'not allowed: no role assigned' }, 403)
 
@@ -113,6 +126,10 @@ app.post('/teams', async (c) => {
   const body = await c.req.json<{ name?: string; sizeBucket?: string; functionType?: string }>()
   const name = (body.name ?? '').trim()
   if (!name) return c.json({ error: 'name is required' }, 400)
+  if (name.length > MAX_NAME) return c.json({ error: `name is too long (max ${MAX_NAME})` }, 400)
+  if ((body.sizeBucket ?? '').length > MAX_SHORT || (body.functionType ?? '').length > MAX_SHORT) {
+    return c.json({ error: `sizeBucket and functionType are limited to ${MAX_SHORT} characters` }, 400)
+  }
 
   const { results } = await c.env.DB.prepare('SELECT id FROM teams').all<{ id: string }>()
   const existing = new Set((results ?? []).map((r) => r.id))
@@ -145,6 +162,9 @@ app.patch('/teams/:id', async (c) => {
 
   const row = await c.env.DB.prepare('SELECT * FROM teams WHERE id = ?').bind(id).first<TeamRow>()
   if (!row) return c.json({ error: 'team not found' }, 404)
+  if ((body.name ?? '').length > MAX_NAME || (body.sizeBucket ?? '').length > MAX_SHORT || (body.functionType ?? '').length > MAX_SHORT) {
+    return c.json({ error: 'a field is too long' }, 400)
+  }
 
   const name = body.name?.trim() || row.name
   const sizeBucket = body.sizeBucket?.trim() || row.size_bucket
@@ -179,6 +199,7 @@ app.post('/teams/:id/buildings', async (c) => {
   const teamId = c.req.param('id')
   const body = await c.req.json<{ name: string; archetype: string; col: number; row: number }>()
   if (!body.name?.trim()) return c.json({ error: 'name is required' }, 400)
+  if (body.name.length > MAX_NAME) return c.json({ error: `name is too long (max ${MAX_NAME})` }, 400)
 
   const id = makeId('b')
   await c.env.DB.prepare(
@@ -196,6 +217,9 @@ app.patch('/buildings/:id', async (c) => {
 
   const row = await c.env.DB.prepare('SELECT * FROM buildings WHERE id = ?').bind(id).first<BuildingRow>()
   if (!row) return c.json({ error: 'building not found' }, 404)
+  if ((body.name ?? '').length > MAX_NAME || (body.notes ?? '').length > MAX_NOTES) {
+    return c.json({ error: 'a field is too long' }, 400)
+  }
 
   const next = {
     name: body.name ?? row.name,
@@ -264,14 +288,16 @@ app.post('/insight', async (c) => {
   }
 
   try {
-    const note = await generateCoachingNote(c.env.AI, built.evidence)
+    const note = await generateCoachingNote(c.env.AI, built.evidence, Number(c.env.AI_TIMEOUT_MS) || 8000)
     return c.json({ ...note, dataSource: built.source })
   } catch (err) {
     // The AI layer is an enhancement, never a dependency (Sprint 3/4's own
     // framing) — a failure here is reported as a normal error response, not
     // a 500 that could be mistaken for the app itself being broken. The
     // frontend shows the score/signals with no narrative when this happens.
-    return c.json({ error: (err as Error).message }, 502)
+    // Log the cause; never hand internal error text to the client.
+    console.error('coaching failed', err)
+    return c.json({ error: 'coaching_unavailable' }, 502)
   }
 })
 
