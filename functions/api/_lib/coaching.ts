@@ -23,7 +23,7 @@
 
 import { computeFacts, buildFactPrompt, signalSentence } from './facts'
 import { templateNote } from './template'
-import { validateModelWording, addressesTopSignal } from './validate'
+import { validateModelWording, addressesTopSignal, isVagueFiller } from './validate'
 
 const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8'
 
@@ -114,17 +114,21 @@ export function buildPrompt(ev: CoachingEvidence): string {
 // weeks). Healthy weeks do not call the model at all (see generateCoachingNote).
 const FACT_SYSTEM_PROMPT = `You are a coaching assistant inside Growth, a tool engineering managers use to \
 monitor team health. You are given this week's team metrics, already aggregated, already ranked, and with the \
-status already decided. The single most important signal has already been chosen for you. Your only job is the wording \
-of one next step.
+status already decided. The single most important signal has already been chosen for you, together with practitioner \
+guidance for it. Your only job is the wording of ONE concrete next step for the team lead.
 
-Reply with EXACTLY one line, nothing before or after:
-ACTION: <under 16 words — one concrete next step for the manager about the most important signal>
+Reply with exactly one line, nothing before or after (an "ACTION:" prefix is optional):
+<one concrete next step, under 28 words>
 
 Rules, all mandatory:
-1. Do NOT include any numbers — the numbers are shown separately.
-2. Never mention burnout, attrition, or any individual person — you only have team-level aggregates.
+1. Do NOT include any numbers: the numbers are shown separately.
+2. Never mention burnout, attrition, or any individual person: you only have team-level aggregates.
 3. Frame any concern as "worth investigating," never as a certainty.
-4. Do not restate or change the status. No markdown, no extra lines.`
+4. Be concrete. Say WHAT the team lead should change or look at, and where it comes naturally what to watch afterwards \
+or a time frame such as "this sprint". Draw on the guidance supplied for the signal.
+5. Do NOT suggest scheduling a meeting, a discussion, a check-in or a conversation. "Discuss with the team" is not a \
+next step. (If the signal is meeting load, suggest cutting or shortening meetings.)
+6. Do not restate or change the status. No markdown, no extra lines.`
 
 // The prompt asks for one `ACTION: ...` line, but the live model usually answers with just the sentence
 // (first live run: 0 of 51 replies carried the label). Accept either, but only a SINGLE line: a reply with
@@ -180,7 +184,7 @@ export async function generateCoachingNote(ai: Ai, evidence: CoachingEvidence, t
 
     const action = parseAction(text)
     const check = validateModelWording({ action }, facts)
-    if (!check.ok || !addressesTopSignal(action, facts)) return fallback
+    if (!check.ok || !addressesTopSignal(action, facts) || isVagueFiller(action)) return fallback
 
     return { status: facts.statusText, signal: signalSentence(facts), action, source: 'model' }
   } catch {

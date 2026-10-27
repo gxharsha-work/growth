@@ -5,14 +5,11 @@
 // path uses, so a fallback is indistinguishable in its factual content.
 
 import { type Facts, type SignalId, signalSentence } from './facts'
+import { PLAYBOOK } from './playbook'
 
-const NEXT_STEP: Record<SignalId, string> = {
-  cycleTime: 'Review what is slowing tickets from start to done.',
-  completion: 'Check scope and blockers on the unfinished sprint work.',
-  reviewTurnaround: 'Spread review load or agree a review turnaround target.',
-  afterHoursCommits: 'Check whether deadlines are pushing work late in the day.',
-  meetingLoad: 'Audit recurring meetings for any that can be dropped.',
-}
+const NEXT_STEP: Record<SignalId, string> = Object.fromEntries(
+  Object.entries(PLAYBOOK).map(([id, move]) => [id, move.step])
+) as Record<SignalId, string>
 
 export type CoachingNote = { status: string; signal: string; action: string }
 

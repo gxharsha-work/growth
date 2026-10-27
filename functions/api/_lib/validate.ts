@@ -15,6 +15,9 @@ import type { Facts, NumberField } from './facts'
 // Burnout / attrition / individual-level language the Responsible AI rules forbid.
 const OFF_LIMITS = /\b(burn ?out|burned out|attrition|quit|quitting|resign|fired|layoff|laid off|leaving the team|flight risk|underperform)\w*/i
 
+// Matches the prompt's "under 28 words" (a 28-word sentence can run past 160 characters).
+const MAX_ACTION_CHARS = 220
+
 export type ValidationResult = { ok: true } | { ok: false; reason: string }
 
 // Names the model may use for each field. A number is bound to the closest
@@ -56,9 +59,28 @@ function boundNumberViolation(text: string, facts: Facts): string | null {
 // it naming a different one ("wrong key signal"), and the first live run of the new prompt showed it
 // writing about meeting load when the decided signal was review turnaround. An action that does not
 // mention the decided signal is not shown; the template (which always addresses it) is used instead.
+// Topic vocabulary, broader than the field names used for number binding: a step about "limiting work in
+// progress" is on topic for cycle time even though it never says "cycle time" (the playbook's own step reads
+// that way).
+const TOPIC: Record<string, RegExp> = {
+  cycleTime: /cycle[- ]time|lead time|in[- ]progress|\bWIP\b|throughput|\bflow\b|oldest|stuck|blocked/i,
+  completion: /completion|commitment|\bcommit|capacity|carry-?over|stretch|re-?plan|scope|sprint (plan|goal)/i,
+  reviewTurnaround: /review|pull request|\bPRs?\b|reviewer/i,
+  afterHoursCommits: /after[- ]hours|overtime|late[- ]night|late in the day|working late|time off|ad-?hoc|unplanned|sustainable|\bpace\b|capacity/i,
+  meetingLoad: /meeting|calendar/i,
+}
 export function addressesTopSignal(action: string, facts: Facts): boolean {
-  const entry = FIELD_PATTERNS.find(([field]) => field === facts.top.id)
-  return !!entry && entry[1].test(action)
+  const pattern = TOPIC[facts.top.id]
+  return !!pattern && pattern.test(action)
+}
+
+// "Schedule a meeting to discuss ..." is not a next step: it names no change and no outcome (the agile-coach
+// skill's "process worship" red flag). The first live-model run produced it for 36 of 51 replies, including
+// for meeting-load problems. Such a reply is not shown; the playbook step is used instead.
+const VAGUE =
+  /\b(schedule|set up|arrange|organi[sz]e|hold|have|call|plan)\b[^.]{0,40}\b(meeting|discussion|conversation|check-?in|chat|sync|call|talk)\b|^(discuss|talk (to|with)|check in with|speak (to|with))\b/i
+export function isVagueFiller(action: string): boolean {
+  return VAGUE.test(action.trim())
 }
 
 export function validateModelWording(
@@ -68,7 +90,7 @@ export function validateModelWording(
   const action = parts.action ?? ''
   const status = parts.status ?? '' // legacy callers; the model no longer writes it
   if (!action.trim()) return { ok: false, reason: 'missing action' }
-  if (action.length > 160 || status.length > 80) return { ok: false, reason: 'wording too long' }
+  if (action.length > MAX_ACTION_CHARS || status.length > 80) return { ok: false, reason: 'wording too long' }
 
   if (OFF_LIMITS.test(`${status} ${action}`)) return { ok: false, reason: 'off-limits language' }
 

@@ -15,7 +15,8 @@ const bundle = await build({
     contents: `
       export { computeFacts, signalSentence, buildFactPrompt, deriveStatus } from './facts'
       export { templateNote } from './template'
-      export { validateModelWording } from './validate'
+      export { validateModelWording, isVagueFiller } from './validate'
+      export { PLAYBOOK } from './playbook'
       export { generateCoachingNote, parseAction } from './coaching'
     `,
     resolveDir: libDir,
@@ -150,6 +151,26 @@ note = await m.generateCoachingNote(run('Schedule a meeting to set meeting load 
 check('reply about a DIFFERENT signal than the decided one -> template', note.source === 'template' && /Review|review/.test(note.action), `${note.source}: ${note.action}`)
 note = await m.generateCoachingNote(run('Here is my advice:\nSpread review load across the team.'), evidence)
 check('multi-line chatty reply -> template', note.source === 'template', note.source)
+
+// ===== coaching playbook (docs/reference-skills): concrete moves instead of "schedule a meeting" =====
+check('playbook: every signal has a step, guidance and a source', Object.values(m.PLAYBOOK).length === 5 && Object.values(m.PLAYBOOK).every((x) => x.step && x.guidance && x.source))
+check('playbook: no digits anywhere (template numbers must come from the evidence)', Object.values(m.PLAYBOOK).every((x) => !/\d/.test(x.step + x.guidance)))
+check('playbook: every step fits the 160-character action limit', Object.values(m.PLAYBOOK).every((x) => x.step.length <= 160))
+check('playbook: no step is itself vague filler', Object.values(m.PLAYBOOK).every((x) => !m.isVagueFiller(x.step)), Object.values(m.PLAYBOOK).filter((x) => m.isVagueFiller(x.step)).map((x) => x.step).join(' | '))
+for (const bad of ['Schedule a meeting with the team to discuss review turnaround.', 'Set up a call to talk about it.', 'Discuss with the team the root cause.', 'Have a conversation about workload.', 'Check in with the team this week.', 'Organize a sync to review the numbers.']) {
+  check(`vague filler detected: "${bad.slice(0, 40)}"`, m.isVagueFiller(bad))
+}
+for (const ok of ['Agree a review SLA and check review load per reviewer.', 'Limit work in progress this sprint and review the oldest items first.', 'Audit recurring meetings and cancel the ones that decide nothing.']) {
+  check(`concrete action is not flagged: "${ok.slice(0, 40)}"`, !m.isVagueFiller(ok))
+}
+note = await m.generateCoachingNote(run('Schedule a meeting with the team to discuss review turnaround.'), evidence)
+check('model reply that only suggests a meeting -> playbook step', note.source === 'template' && note.action === m.PLAYBOOK.reviewTurnaround.step, `${note.source}: ${note.action}`)
+note = await m.generateCoachingNote(run('Agree a review SLA this sprint and watch review load per reviewer.'), evidence)
+check('concrete model reply about the decided signal -> shown', note.source === 'model' && /SLA/.test(note.action), `${note.source}: ${note.action}`)
+const tpl = m.templateNote(m.computeFacts(evidence))
+check('template next step is the playbook step for the decided signal', tpl.action === m.PLAYBOOK.reviewTurnaround.step, tpl.action)
+const prompt2 = m.buildFactPrompt(m.computeFacts(evidence))
+check('prompt carries the guidance and a style example for the decided signal', prompt2.includes(m.PLAYBOOK.reviewTurnaround.guidance) && prompt2.includes(m.PLAYBOOK.reviewTurnaround.step))
 
 console.log(failures === 0 ? '\nALL PASSED' : `\n${failures} FAILED`)
 process.exit(failures ? 1 : 0)

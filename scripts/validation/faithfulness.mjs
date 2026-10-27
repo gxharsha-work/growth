@@ -181,7 +181,7 @@ for (const c of cases) {
   const bad = ['This team is at risk of burnout.', 'Expect attrition soon.', 'Someone may quit.', 'A flight risk on the team.']
   if (!m.validateModelWording({ ...clean, action: bad[Math.floor(rand() * bad.length)] }, facts).ok) counts.v3++
   // V4: overlong
-  if (!m.validateModelWording({ ...clean, action: 'x'.repeat(200) }, facts).ok) counts.v4++
+  if (!m.validateModelWording({ ...clean, action: 'x'.repeat(260) }, facts).ok) counts.v4++
   // V5/V6: clean wording must pass (false-reject rate), with and without an allowed number
   if (!m.validateModelWording(clean, facts).ok) counts.v5Rejected++
   const withNum = { ...clean, action: `Keep ${facts.top.label.toLowerCase()} near ${Math.round(facts.top.value)}.` }
@@ -228,7 +228,7 @@ lines.push(`| V1 invented decimal (e.g. "41.57") | rejected ${p(counts.v1, n)} |
 lines.push(`| V2 invented integer 1-100 (random) | WRONGLY ACCEPTED ${p(counts.v2Accepted, n)} |`)
 lines.push(`| V7 real value attached to the wrong field (number laundering) | WRONGLY ACCEPTED ${p(counts.v7Accepted, counts.v7Attacks)} |`)
 lines.push(`| V3 off-limits wording (burnout / attrition / quit / flight risk) | rejected ${p(counts.v3, n)} |`)
-lines.push(`| V4 overlong action (200 chars) | rejected ${p(counts.v4, n)} |`)
+lines.push(`| V4 overlong action (260 chars) | rejected ${p(counts.v4, n)} |`)
 lines.push(`| V5 clean wording, no numbers | falsely rejected ${p(counts.v5Rejected, n)} |`)
 lines.push(`| V6 clean wording citing an allowed number | falsely rejected ${p(counts.v6Rejected, n)} |`)
 lines.push('')

@@ -14,6 +14,7 @@ import {
   normalizeMeetingLoad,
 } from './scoring'
 import type { CoachingEvidence } from './coaching'
+import { PLAYBOOK } from './playbook'
 
 export type Signals = CoachingEvidence['signals']
 export type SignalId = 'cycleTime' | 'completion' | 'reviewTurnaround' | 'afterHoursCommits' | 'meetingLoad'
@@ -207,6 +208,8 @@ export function buildFactPrompt(facts: Facts): string {
     }),
     '',
     `The most important signal is already decided: ${facts.top.label}. Do not pick a different one.`,
+    `Guidance for ${facts.top.label}: ${PLAYBOOK[facts.top.id].guidance}`,
+    `Example of the style wanted (adapt it to this situation, keep it specific): ${PLAYBOOK[facts.top.id].step}`,
   ]
   return lines.join('\n')
 }
