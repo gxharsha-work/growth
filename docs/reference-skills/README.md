@@ -32,7 +32,7 @@ Other uses:
   says to suppress results for any group under 5 respondents (k-anonymity, minimum group size of 5) and not to
   profile individuals; the cycle-time skill warns that flow metrics are team-level signals and that ranking
   individuals with them destroys the behaviour they measure. Our own Sprint 6 plan proposed a minimum of 3
-  consenting members; **the skill says 5. That is an open decision for the team.**
+  consenting members; the skill says 5. **Decision (team): minimum group size is 3.** It is not enforced in code yet: that needs a team roster and consent record, which do not exist (see HANDOFF section 6).
 - **Not wired into code yet, copied for the next iteration:** `scrum-master`, `sprint-retrospective`,
   `delivery-manager/references/red-flags.md` (retrospective prompts, sprint-health and delivery red flags).
 

@@ -47,6 +47,7 @@ Suggested merge order: open the PR for `feature/p0-hardening` first, review and 
 | Real value attached to the wrong field accepted | 100% | 0% |
 | Real Sprint 5 model outputs replayed: healthy weeks shown as a concern | 95.0% (57/60) | 0% |
 | Replay: model calls made | 80 | 20 |
+| Raw ticket summaries / event titles in the data files and the built front-end bundle (`node scripts/test-no-raw-text.mjs`, `grep` of `dist/assets`) | 29 found / bundle contains ticket text | 0 / 0 |
 | API stress suite (32 tests, real Hono app + real SQLite from the migrations, mock model) | 20 / 32 | 32 / 32 |
 
 Some "after" numbers are true **by construction**, not because the model improved: the status now comes from code, so "status agrees with the flag" is 100% by definition. The gain is that the model can no longer decide it. The replay's "notes whose wording came from the model" fell from 25% to 3.8% after the final guard was added; that figure describes the *old* Sprint 5 prompt's outputs and is not meaningful for the new prompt (use 3b).
@@ -179,6 +180,7 @@ npm run lint
 (cd worker-ingestion && ../node_modules/.bin/tsc --noEmit -p tsconfig.json)
 
 node scripts/test-facts-validate.mjs          # coaching logic, 36 checks
+node scripts/test-no-raw-text.mjs             # no ticket/event text in data files or ingest writers
 node scripts/test-sprint-align.mjs            # 15
 node scripts/test-scoring-parity.mjs          # server and browser scorers agree
 
@@ -196,15 +198,33 @@ Reproducing a "before" number: `git worktree add --detach /tmp/old feature/p0-ha
 
 ## 6. Known open issues (most important first)
 
-1. **Raw ticket and event titles ship in the front-end bundle.** `src/data/jiraSignals.generated.json` and `calendarSignals.generated.json` contain per-issue `summary` and per-event `title` and are imported by `mockSignals.js`. The API strips them, the bundle does not. Fix: drop `details` in the ingest scripts before writing the files (and stop importing them in production). This is the main remaining privacy gap.
+1. **Raw ticket and event text: fixed in the code and data, not yet in the database.** The four ingest writers (`scripts/jira-ingest.js`, `scripts/google-calendar-ingest.js`, `worker-ingestion/src/jira.ts`, `worker-ingestion/src/calendar.ts`) no longer store ticket `summary` or event `title`, and the two generated JSON files were stripped (23 summaries, 2 titles). `node scripts/test-no-raw-text.mjs` guards this (it reported 29 failures before the change). Still to do on Cloudflare: rows already in D1 keep old text until the worker re-runs; to clear it immediately run `UPDATE signal_weeks SET payload = json_remove(payload, '$.details', '$.jira.details', '$.calendar.details');` (`json_remove` ignores paths that are absent; table from `migrations/0001_init.sql`; untested against D1). Migration `0003` seed data also contains raw titles; it is history, so edit it only if the repo itself must be clean. The API already strips `details` on read.
 2. **Whether the model adds value over the template is unproven.** It works on the live model (88.2% of replies accepted, no vague filler), but it mostly rewords the playbook step, and nobody has scored it against the template (section 3b, 4.6). If it does not win the blinded comparison, ship the template: it now carries the same specific advice.
 3. **Cycle time reads ~0 days on the refreshed Jira data.** Jira timestamps are real-time and the board was populated in one sitting, so issues finished "in minutes". It becomes realistic only as issues move over several days.
 4. **Calendar signal covers one week** (2026-W38). The October sprint shows the meeting load as a placeholder and excludes it from the score.
 5. **GitHub is still a placeholder** (excluded from the score). Without it, review-bottleneck strain is nearly invisible (recall 65% → 15% in the seeded evaluation).
 6. **The early-warning rule is a "big drops only" detector** (recall 43% on held-out seeded strain, 26% for subtle) and fires on 55% of benign events (holidays, planned hardening sprints). A per-signal CUSUM candidate raised subtle recall to 51% (95% CI 43–58%) but delayed detection from 1 to 3 weeks and raised benign fires to 68%; it was **not shipped** (`scripts/validation/persignal.mjs`, `eval/validation/after/persignal_heldout.md`).
 7. **Human validation has not been run** (expert content-validity panel, blinded note comparison). A third, independently written scenario library is still needed (`scripts/validation/scenarios.mjs`: only the `HELDOUT` data changes).
-8. **Minimum group size is undecided.** The Sprint 6 plan proposed suppressing scores for teams with fewer than 3 consenting members; `docs/reference-skills/hr-operations/people-analytics/SKILL.md` says 5 (k-anonymity). Nothing enforces either yet, and the Solstice team (one to five engineers) is the first it would affect.
+8. **Minimum group size: decided 3, not enforced.** The team chose 3 consenting members (the skill in `docs/reference-skills/hr-operations/people-analytics/SKILL.md` suggests 5; 3 is weaker k-anonymity, accepted because teams here are small). Enforcing it needs a roster and consent record that do not exist yet, so no code suppresses a score today. The Solstice team (one to five engineers) is the first it would affect.
 9. `eval/validation/e5_answer_key.json` is the answer key for the expert sessions: do not hand it to participants.
+
+## 6a. Week 7 priorities: status
+
+For "Evidence-Driven System Improvement" (implement the highest-priority improvements and show measurable improvement). Honest status:
+
+| # | Priority from the Week 7 report | Status | Evidence / reason |
+| --- | --- | --- | --- |
+| 1 | Code-derived status and validated coaching wording | **Done, measured** | Section 3a (defects 73.7% -> 0%, replay 95% -> 0%, stress 20/32 -> 32/32) and live model runs in 3b |
+| 2 | Expert review of the rule thresholds | **Blocked** | Needs human domain experts; only simulated data exists and it is not presented as expert validation |
+| 3 | Suppress flags during benign events (holidays, planned hardening) | **Not built** | Measured problem (55% benign fires, issue 6); no calendar-context signal to key on yet |
+| 4 | Per-signal CUSUM early warning | **Evaluated, not shipped** | Higher subtle recall, but slower detection and more benign fires (issue 6) |
+| 5 | GitHub ingestion | **Not done** | Needs a token and a real repo; the live team is a Jira-only marketing team |
+| 6 | Stakeholder (manager) validation of coaching notes | **Blocked** | Blinded sheet exists, nobody has scored it (issue 2) |
+| 7 | Independent scenario library | **Not done** | Needs a second author (issue 7) |
+| - | Privacy: no raw ticket/event text shipped | **Done, measured** | Issue 1, `scripts/test-no-raw-text.mjs` |
+| - | Minimum group size | **Decided (3), not enforced** | Issue 8 |
+
+Only #1 and the privacy fix carry measured before/after numbers; the rest are listed so nobody assumes they were attempted.
 
 ## 7. Jira board (the data source for the live team)
 
