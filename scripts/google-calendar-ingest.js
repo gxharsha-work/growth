@@ -89,10 +89,10 @@ async function main() {
     if (result.include) {
       totalHours += result.hours
       console.log(`  ✓ ${title}: ${result.hours.toFixed(1)}h`)
-      details.push({ title, hours: Math.round(result.hours * 10) / 10, included: true, reason: null })
+      details.push({ hours: Math.round(result.hours * 10) / 10, included: true, reason: null }) // no title (FR17)
     } else {
       console.log(`  ✗ ${title}: excluded (${result.reason})`)
-      details.push({ title, hours: null, included: false, reason: result.reason })
+      details.push({ hours: null, included: false, reason: result.reason }) // no title (FR17)
     }
   }
 

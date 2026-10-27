@@ -16,7 +16,6 @@
         "details": [
           {
             "key": "SCRUM-14",
-            "summary": "TikTok Spark Ads creative testing",
             "status": "Testing",
             "countsAsDone": false,
             "cycleTimeDays": 41.32,
@@ -25,7 +24,6 @@
           },
           {
             "key": "SCRUM-13",
-            "summary": "Launch Meta Advantage+ shopping campaign",
             "status": "Done",
             "countsAsDone": true,
             "cycleTimeDays": 4.04,
@@ -34,7 +32,6 @@
           },
           {
             "key": "SCRUM-11",
-            "summary": "Rewrite copy for 10 highest-traffic category pages",
             "status": "In Progress",
             "countsAsDone": false,
             "cycleTimeDays": 41.32,
@@ -43,7 +40,6 @@
           },
           {
             "key": "SCRUM-10",
-            "summary": "Keyword & content gap analysis",
             "status": "In Progress",
             "countsAsDone": false,
             "cycleTimeDays": 37.28,
@@ -52,7 +48,6 @@
           },
           {
             "key": "SCRUM-2",
-            "summary": "[Legacy] Audit old affiliate partnerships",
             "status": "To Do",
             "countsAsDone": false,
             "cycleTimeDays": null,
@@ -61,7 +56,6 @@
           },
           {
             "key": "SCRUM-1",
-            "summary": "[Legacy] Migrate old blog CMS",
             "status": "Idea",
             "countsAsDone": false,
             "cycleTimeDays": null,
@@ -87,7 +81,6 @@
         "details": [
           {
             "key": "SCRUM-28",
-            "summary": "Define north-star metric and weekly KPI dashboard",
             "status": "In Progress",
             "countsAsDone": false,
             "cycleTimeDays": 0,
@@ -96,7 +89,6 @@
           },
           {
             "key": "SCRUM-27",
-            "summary": "Referral landing page and share widget",
             "status": "In Progress",
             "countsAsDone": false,
             "cycleTimeDays": 0,
@@ -105,7 +97,6 @@
           },
           {
             "key": "SCRUM-26",
-            "summary": "Write 5-email welcome series copy",
             "status": "Done",
             "countsAsDone": true,
             "cycleTimeDays": 0,
@@ -114,7 +105,6 @@
           },
           {
             "key": "SCRUM-25",
-            "summary": "Set up Meta CAPI server-side conversion events",
             "status": "Done",
             "countsAsDone": true,
             "cycleTimeDays": 0,
@@ -123,7 +113,6 @@
           },
           {
             "key": "SCRUM-24",
-            "summary": "Fix canonical tags on faceted category pages",
             "status": "Done",
             "countsAsDone": true,
             "cycleTimeDays": 0,
@@ -132,7 +121,6 @@
           },
           {
             "key": "SCRUM-23",
-            "summary": "Audit GA4 events and UTM naming taxonomy",
             "status": "Done",
             "countsAsDone": true,
             "cycleTimeDays": 0,
@@ -141,7 +129,6 @@
           },
           {
             "key": "SCRUM-22",
-            "summary": "Fix broken unsubscribe link in SMS footer",
             "status": "Done",
             "countsAsDone": true,
             "cycleTimeDays": 0,
@@ -150,7 +137,6 @@
           },
           {
             "key": "SCRUM-21",
-            "summary": "Fix duplicate purchase events firing on thank-you page",
             "status": "Done",
             "countsAsDone": true,
             "cycleTimeDays": 0,
@@ -159,7 +145,6 @@
           },
           {
             "key": "SCRUM-19",
-            "summary": "Build KOL/affiliate partner shortlist",
             "status": "To Do",
             "countsAsDone": false,
             "cycleTimeDays": null,
@@ -168,7 +153,6 @@
           },
           {
             "key": "SCRUM-18",
-            "summary": "Design referral reward structure and pricing test",
             "status": "In Progress",
             "countsAsDone": false,
             "cycleTimeDays": 0,
@@ -177,7 +161,6 @@
           },
           {
             "key": "SCRUM-17",
-            "summary": "Design VIP tiering and dedicated email track",
             "status": "Testing",
             "countsAsDone": false,
             "cycleTimeDays": 0,
@@ -186,7 +169,6 @@
           },
           {
             "key": "SCRUM-16",
-            "summary": "Build cart/browse abandonment flow in Klaviyo",
             "status": "Done",
             "countsAsDone": true,
             "cycleTimeDays": 0,
@@ -195,7 +177,6 @@
           },
           {
             "key": "SCRUM-15",
-            "summary": "Reallocate Google Performance Max budgets",
             "status": "In Progress",
             "countsAsDone": false,
             "cycleTimeDays": 0,
@@ -204,7 +185,6 @@
           },
           {
             "key": "SCRUM-14",
-            "summary": "TikTok Spark Ads creative testing",
             "status": "Testing",
             "countsAsDone": false,
             "cycleTimeDays": 41.32,
@@ -213,7 +193,6 @@
           },
           {
             "key": "SCRUM-12",
-            "summary": "Build backlink outreach target list",
             "status": "Idea",
             "countsAsDone": false,
             "cycleTimeDays": null,
@@ -222,7 +201,6 @@
           },
           {
             "key": "SCRUM-11",
-            "summary": "Rewrite copy for 10 highest-traffic category pages",
             "status": "In Progress",
             "countsAsDone": false,
             "cycleTimeDays": 41.32,
@@ -231,7 +209,6 @@
           },
           {
             "key": "SCRUM-10",
-            "summary": "Keyword & content gap analysis",
             "status": "In Progress",
             "countsAsDone": false,
             "cycleTimeDays": 37.28,
