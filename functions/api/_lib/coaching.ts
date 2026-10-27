@@ -23,7 +23,7 @@
 
 import { computeFacts, buildFactPrompt, signalSentence } from './facts'
 import { templateNote } from './template'
-import { validateModelWording } from './validate'
+import { validateModelWording, addressesTopSignal } from './validate'
 
 const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8'
 
@@ -126,12 +126,20 @@ Rules, all mandatory:
 3. Frame any concern as "worth investigating," never as a certainty.
 4. Do not restate or change the status. No markdown, no extra lines.`
 
-function parseAction(raw: string): string {
-  for (const line of raw.split('\n')) {
-    const m = line.match(/^ACTION\s*:\s*(.+)$/i)
-    if (m) return m[1].trim()
-  }
-  return ''
+// The prompt asks for one `ACTION: ...` line, but the live model usually answers with just the sentence
+// (first live run: 0 of 51 replies carried the label). Accept either, but only a SINGLE line: a reply with
+// explanations or several lines is not what was asked for and falls back to the template.
+export function parseAction(raw: string): string {
+  const lines = raw
+    .split('\n')
+    .map((l) => l.replace(/^[-*\u2022\s]+/, '').trim()) // drop bullets first, so a bulleted label is still seen
+    .filter(Boolean)
+  const labelled = lines.find((l) => /^ACTION\s*:/i.test(l))
+  const line = labelled ?? (lines.length === 1 ? lines[0] : '')
+  return line
+    .replace(/^ACTION\s*:\s*/i, '')
+    .replace(/^["'`*_]+|["'`*_]+$/g, '')
+    .trim()
 }
 
 // Always returns a note. A healthy week is answered by the deterministic
@@ -172,7 +180,7 @@ export async function generateCoachingNote(ai: Ai, evidence: CoachingEvidence, t
 
     const action = parseAction(text)
     const check = validateModelWording({ action }, facts)
-    if (!check.ok) return fallback
+    if (!check.ok || !addressesTopSignal(action, facts)) return fallback
 
     return { status: facts.statusText, signal: signalSentence(facts), action, source: 'model' }
   } catch {

@@ -7,5 +7,5 @@ Code under test: `functions/api/_lib/`. Input: 80 recorded live-model notes (Spr
 | Healthy weeks shown as a concern (false concern) | 0.0% (0/60) |
 | Early-warning weeks shown as healthy (false reassurance) | 0.0% (0/20) |
 | Status agrees with the deterministic flag | 100.0% (80/80) |
-| Notes whose wording came from the model | 25.0% (20/80) |
+| Notes whose wording came from the model | 3.8% (3/80) |
 | Model calls made | 20 of 80 |

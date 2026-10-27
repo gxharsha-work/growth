@@ -52,6 +52,15 @@ function boundNumberViolation(text: string, facts: Facts): string | null {
   return null
 }
 
+// The code decides which signal matters; the model must write about THAT signal. Sprint 5 showed
+// it naming a different one ("wrong key signal"), and the first live run of the new prompt showed it
+// writing about meeting load when the decided signal was review turnaround. An action that does not
+// mention the decided signal is not shown; the template (which always addresses it) is used instead.
+export function addressesTopSignal(action: string, facts: Facts): boolean {
+  const entry = FIELD_PATTERNS.find(([field]) => field === facts.top.id)
+  return !!entry && entry[1].test(action)
+}
+
 export function validateModelWording(
   parts: { action: string; status?: string },
   facts: Facts
