@@ -107,63 +107,74 @@ export function buildPrompt(ev: CoachingEvidence): string {
   return lines.join('\n')
 }
 
-// The model writes ONLY the wording (STATUS + ACTION). The ranking, the
-// numbers, and every peer comparison are decided in code (facts.ts) and the
-// SIGNAL line is code-generated, so the model cannot pick the wrong signal or
-// reverse a comparison — the two failures the report flagged.
+// The model writes ONLY the ACTION line. The status, the ranking, the numbers
+// and every peer comparison are decided in code (facts.ts) and the SIGNAL line
+// is code-generated, so the model cannot pick the wrong signal, reverse a
+// comparison, or raise concern on a healthy team (Sprint 5: 97% of healthy
+// weeks). Healthy weeks do not call the model at all (see generateCoachingNote).
 const FACT_SYSTEM_PROMPT = `You are a coaching assistant inside Growth, a tool engineering managers use to \
-monitor team health. You are given this week's team metrics, already aggregated and already ranked. \
-The single most important signal has already been chosen for you. Your only job is the wording.
+monitor team health. You are given this week's team metrics, already aggregated, already ranked, and with the \
+status already decided. The single most important signal has already been chosen for you. Your only job is the wording \
+of one next step.
 
-Reply with EXACTLY two lines, nothing before or after:
-STATUS: <5 words max — the verdict, e.g. "Worth investigating" or "Looks healthy, stable">
+Reply with EXACTLY one line, nothing before or after:
 ACTION: <under 16 words — one concrete next step for the manager about the most important signal>
 
 Rules, all mandatory:
 1. Do NOT include any numbers — the numbers are shown separately.
 2. Never mention burnout, attrition, or any individual person — you only have team-level aggregates.
 3. Frame any concern as "worth investigating," never as a certainty.
-4. If the early-warning state is "not triggered" and the trend is improving or holding steady, \
-STATUS must say the team looks healthy — do not manufacture concern.
-5. No markdown, no extra lines — exactly the two labeled lines above.`
+4. Do not restate or change the status. No markdown, no extra lines.`
 
-function parseStatusAction(raw: string): { status: string; action: string } {
-  let status = ''
-  let action = ''
+function parseAction(raw: string): string {
   for (const line of raw.split('\n')) {
-    const m = line.match(/^(STATUS|ACTION)\s*:\s*(.+)$/i)
-    if (!m) continue
-    if (m[1].toUpperCase() === 'STATUS') status = m[2].trim()
-    else action = m[2].trim()
+    const m = line.match(/^ACTION\s*:\s*(.+)$/i)
+    if (m) return m[1].trim()
   }
-  return { status, action }
+  return ''
 }
 
-// Always returns a note. If the AI call fails or its wording doesn't pass
-// validation, the deterministic template note is returned instead (source
-// says which), so a bad or missing model response degrades to a safe,
-// fully-grounded note rather than an error or a misleading claim.
-export async function generateCoachingNote(ai: Ai, evidence: CoachingEvidence): Promise<GeneratedNote> {
+// Always returns a note. A healthy week is answered by the deterministic
+// template without calling the model. If the AI call fails or its wording
+// doesn't pass validation, the template note is returned instead (source says
+// which), so a bad or missing model response degrades to a safe, fully-grounded
+// note rather than an error or a misleading claim.
+// A model call that never returns must not hang the request: give up and use the template.
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('AI timeout')), ms)
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v) },
+      (e) => { clearTimeout(timer); reject(e) }
+    )
+  })
+}
+
+export async function generateCoachingNote(ai: Ai, evidence: CoachingEvidence, timeoutMs = 8000): Promise<GeneratedNote> {
   const facts = computeFacts(evidence)
   const fallback: GeneratedNote = { ...templateNote(facts), source: 'template' }
+  if (facts.status === 'healthy') return fallback
 
   try {
-    const result = await ai.run(MODEL, {
-      messages: [
-        { role: 'system', content: FACT_SYSTEM_PROMPT },
-        { role: 'user', content: buildFactPrompt(facts) },
-      ],
-      max_tokens: 200,
-      temperature: 0,
-    })
+    const result = await withTimeout(
+      ai.run(MODEL, {
+        messages: [
+          { role: 'system', content: FACT_SYSTEM_PROMPT },
+          { role: 'user', content: buildFactPrompt(facts) },
+        ],
+        max_tokens: 200,
+        temperature: 0,
+      }),
+      timeoutMs
+    )
     const text = (result as { response?: string }).response
     if (!text) return fallback
 
-    const parts = parseStatusAction(text)
-    const check = validateModelWording(parts, facts)
+    const action = parseAction(text)
+    const check = validateModelWording({ action }, facts)
     if (!check.ok) return fallback
 
-    return { status: parts.status, signal: signalSentence(facts), action: parts.action, source: 'model' }
+    return { status: facts.statusText, signal: signalSentence(facts), action, source: 'model' }
   } catch {
     return fallback
   }

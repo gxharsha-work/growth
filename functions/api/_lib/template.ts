@@ -16,11 +16,13 @@ const NEXT_STEP: Record<SignalId, string> = {
 
 export type CoachingNote = { status: string; signal: string; action: string }
 
+// The status comes from facts.statusText (derived in code from the flag, the
+// trend and the absolute score). A healthy week gets no next step: Sprint 5
+// showed that generated "next steps" on healthy weeks only manufacture concern.
 export function templateNote(facts: Facts): CoachingNote {
-  const concern = facts.earlyWarning || facts.trendWord === 'declining'
   return {
-    status: concern ? 'Worth investigating' : 'Looks healthy, stable',
+    status: facts.statusText,
     signal: signalSentence(facts),
-    action: NEXT_STEP[facts.top.id],
+    action: facts.status === 'healthy' ? 'No action needed — keep monitoring.' : NEXT_STEP[facts.top.id],
   }
 }

@@ -1,35 +1,72 @@
-// Validates the model's wording before it is shown. The model only writes
-// STATUS and ACTION (the SIGNAL line and all comparisons are code-generated),
-// so validation here is narrow but strict: any number the model cites must be
-// one that actually appears in the evidence, and it must not use off-limits
-// language. Anything that fails means we show the deterministic template note
-// instead (report §3.1: "unverified, inconsistent output").
+// Validates the model's wording before it is shown. The model writes only the
+// ACTION line (the status, the SIGNAL line and every comparison are
+// code-generated), so validation is narrow but strict:
+//   - no off-limits language (burnout, attrition, individuals);
+//   - length limits;
+//   - every number must sit next to the name of a field AND equal that field's
+//     value (field-to-value match). The previous check only asked whether the
+//     number appeared *anywhere* in the evidence, so a fabricated integer that
+//     happened to equal some other value was accepted (Sprint 6 finding D-3:
+//     8.7% of random integers passed).
+// Anything that fails means the deterministic template note is shown instead.
 
-import type { Facts } from './facts'
+import type { Facts, NumberField } from './facts'
 
 // Burnout / attrition / individual-level language the Responsible AI rules forbid.
 const OFF_LIMITS = /\b(burn ?out|burned out|attrition|quit|quitting|resign|fired|layoff|laid off|leaving the team|flight risk|underperform)\w*/i
 
 export type ValidationResult = { ok: true } | { ok: false; reason: string }
 
-function citedNumbers(text: string): string[] {
-  return text.match(/\d+(?:\.\d+)?/g) ?? []
+// Names the model may use for each field. A number is bound to the closest
+// field name that precedes it.
+const FIELD_PATTERNS: [NumberField, RegExp][] = [
+  ['cycleTime', /cycle[- ]time/i],
+  ['completion', /(?:sprint )?completion/i],
+  ['reviewTurnaround', /review (?:turnaround|time|speed)|code reviews?|reviews?/i],
+  ['afterHoursCommits', /after[- ]hours(?: commits)?|late[- ]night commits/i],
+  ['meetingLoad', /meetings?(?: load| hours)?/i],
+  ['score', /(?:health |composite )?score/i],
+  ['week', /week/i],
+]
+const MAX_GAP = 30 // characters between the field name and its number
+
+function boundNumberViolation(text: string, facts: Facts): string | null {
+  const numRe = /\d+(?:\.\d+)?/g
+  let m: RegExpExecArray | null
+  while ((m = numRe.exec(text)) !== null) {
+    const before = text.slice(0, m.index)
+    let best: { field: NumberField; end: number } | null = null
+    for (const [field, pattern] of FIELD_PATTERNS) {
+      const g = new RegExp(pattern.source, 'gi')
+      let mm: RegExpExecArray | null
+      while ((mm = g.exec(before)) !== null) {
+        const end = mm.index + mm[0].length
+        if (!best || end > best.end) best = { field, end }
+      }
+    }
+    if (!best || m.index - best.end > MAX_GAP) return `number ${m[0]} is not attached to a known field`
+    if (!facts.allowedByField[best.field].has(m[0])) {
+      return `number ${m[0]} does not match ${best.field}`
+    }
+  }
+  return null
 }
 
 export function validateModelWording(
-  parts: { status: string; action: string },
+  parts: { action: string; status?: string },
   facts: Facts
 ): ValidationResult {
-  const { status, action } = parts
-  if (!status.trim() || !action.trim()) return { ok: false, reason: 'missing status or action' }
-  if (status.length > 80 || action.length > 160) return { ok: false, reason: 'status or action too long' }
+  const action = parts.action ?? ''
+  const status = parts.status ?? '' // legacy callers; the model no longer writes it
+  if (!action.trim()) return { ok: false, reason: 'missing action' }
+  if (action.length > 160 || status.length > 80) return { ok: false, reason: 'wording too long' }
 
-  const combined = `${status} ${action}`
-  if (OFF_LIMITS.test(combined)) return { ok: false, reason: 'off-limits language' }
+  if (OFF_LIMITS.test(`${status} ${action}`)) return { ok: false, reason: 'off-limits language' }
 
-  // Every number the model echoes must trace back to the evidence.
-  for (const n of citedNumbers(combined)) {
-    if (!facts.allowedNumbers.has(n)) return { ok: false, reason: `uncited number: ${n}` }
+  for (const text of [status, action]) {
+    if (!text) continue
+    const violation = boundNumberViolation(text, facts)
+    if (violation) return { ok: false, reason: violation }
   }
   return { ok: true }
 }
