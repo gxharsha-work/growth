@@ -1,7 +1,7 @@
 # Handoff — AI coaching, Cloudflare deployment and open work
 
 **For:** the teammate taking over the AI coaching layer and the Cloudflare side.
-**State at handoff:** everything below was built and verified **offline** (no Cloudflare access). Nothing from branches `feature/p0-hardening` or `feature/evidence-driven-improvements` has been deployed, so the live site still runs the Sprint 5 code. Section 4 is your checklist; section 3 says what is and is not verified.
+**State at handoff:** the code was built and tested offline with a mock model, and the new coaching pipeline was then **measured on the real Workers AI model** with a Cloudflare token (section 3b), which found and fixed a reply-parsing bug. Nothing from branches `feature/p0-hardening` or `feature/evidence-driven-improvements` has been *deployed*, so the live site still runs the Sprint 5 code. Section 3 says exactly what is and is not verified; section 4 is your checklist.
 
 ---
 
@@ -32,14 +32,11 @@ Suggested merge order: open the PR for `feature/p0-hardening` first, review and 
 
 ## 3. Verified vs not verified
 
-**Read this first: no Workers AI call was made in this work.** The author had no Cloudflare credentials, so everything below tests the code *around* the model, not the model itself:
+**How this was tested.** The work was first built and tested with no Cloudflare access, using a mock model. Later a Cloudflare API token became available and the **new pipeline was measured on the real Workers AI model** (section 3b). That live run found a bug the mock tests had hidden (below), which is now fixed.
 
-- **Real model behaviour** enters only through the **recorded Sprint 5 outputs** (`eval/results.csv`, 170 live-model calls made earlier on the deployed endpoint). `replay-sprint5.mjs` feeds them through the old and the new pipeline. Those outputs came from the *old* prompt.
-- **Everything else uses a mock model** (`stress-test.mjs`, `test-facts-validate.mjs`) that returns what the test asks for: empty text, garbage, off-limits wording, a hang. That is the right tool for failure handling, and it says nothing about what the live model writes.
-- Some "after" numbers are true **by construction**, not because the model improved: the status now comes from code, so "status agrees with the flag" is 100% by definition. The gain is that the model can no longer decide it.
-- So the accurate claim is: *the guard rails around the AI are tested and improved; the AI's own output under the new prompt has not been measured.* Section 4.6 is how to measure it.
+**Why that bug was invisible offline.** The mock model returned replies in exactly the format the prompt asks for, so the tests could not fail: they were written to agree with the code. The real model answers with just the sentence and no `ACTION:` label, so the first live run accepted **0 of 51** replies and every note silently fell back to the template. The parser is now tolerant (`parseAction`), and there are unit tests for unlabelled, bulleted, quoted, multi-line and empty replies.
 
-**Verified offline** (re-run any time; commands in section 5):
+### 3a. Verified offline (re-run any time; commands in section 5)
 
 | Check | Before | After |
 | --- | --- | --- |
@@ -49,14 +46,41 @@ Suggested merge order: open the PR for `feature/p0-hardening` first, review and 
 | Real value attached to the wrong field accepted | 100% | 0% |
 | Real Sprint 5 model outputs replayed: healthy weeks shown as a concern | 95.0% (57/60) | 0% |
 | Replay: model calls made | 80 | 20 |
-| API stress suite (32 tests, real Hono app + real SQLite from the migrations) | 20 / 32 | 32 / 32 |
+| API stress suite (32 tests, real Hono app + real SQLite from the migrations, mock model) | 20 / 32 | 32 / 32 |
 
-**NOT verified — needs Cloudflare:**
+Some "after" numbers are true **by construction**, not because the model improved: the status now comes from code, so "status agrees with the flag" is 100% by definition. The gain is that the model can no longer decide it. The replay's "notes whose wording came from the model" fell from 25% to 3.8% after the final guard was added; that figure describes the *old* Sprint 5 prompt's outputs and is not meaningful for the new prompt (use 3b).
 
-- The **new prompt on the live model**: does it return exactly one `ACTION:` line, how often does the validator reject it (→ template fallback), is the action useful. The replay only exercises the code *around* the model, because the recorded outputs came from the old prompt.
+### 3b. Measured on the live model (`scripts/validation/live-model-eval.mjs`, 51 real calls)
+
+Real `@cf/meta/llama-3.1-8b-instruct-fp8` on Workers AI, called through the production `generateCoachingNote` (new prompt, validator, timeout), 17 non-healthy cases x 3 runs (the 16 real Platform/Backend team-weeks plus seeded profiles at weeks 5 and 8). The 19 healthy cases correctly made **0** model calls.
+
+| Measure | Run 1 (parser bug) | Run 2 (fixed) |
+| --- | --- | --- |
+| Reply is a usable single-line action | 0% | 100% (51/51) |
+| Note shown is model-written (passes every check) | 0% | **70.6%** (36/51) |
+| Fell back to the template | 100% | 29.4% (15/51) |
+| Rejected because it cites a number not tied to its field | — | 12 of the 15 |
+| Rejected because it ignored the signal the code decided | — | 3 of the 15 |
+| Same action text on all 3 runs of a case (temperature 0) | — | 88.2% (15/17) |
+| Latency p50 / p95 | 1.4 s / 2.2 s | 1.4 s / 2.0 s |
+
+Files: `eval/validation/after/live_model_eval.md` (summary and per-case actions), `live_model_raw.json` (every raw reply), `live_model_blind_sheet.csv` + `live_model_blind_key.csv` (blinded template-vs-model sheet for human scoring); run 1 is kept at `eval/validation/before/live_model_eval_run1_before_format_fix.md`.
+
+**What the live run says about quality (read before deciding to keep the model):**
+
+- The replies are **generic and repetitive**: 36 of the 51 replies start with "Schedule a meeting with the team to discuss…", including for meeting-load problems, where the template's "Audit recurring meetings for any that can be dropped" is arguably better. Only 17 distinct replies occurred across 51 calls (one per case).
+- The model sometimes writes goals the data does not contain ("reduce review turnaround to peer average within the next two weeks").
+- This is why the decision rule matters: **keep the model-written action only if it beats the template in a blinded human comparison.** The sheet is ready; nobody has scored it yet.
+- Not yet tried, possible improvements: tighten the prompt (forbid "schedule a meeting", give two example actions), or let the model choose among the template's actions instead of writing free text.
+
+### 3c. NOT verified — still needs Cloudflare or people
+
+- **The deployed endpoint.** The live run called Workers AI's REST API directly with the same model, messages, temperature and token limit; it did not go through the Pages Function or the `AI` binding. Expect the same behaviour, but confirm with the smoke tests in 4.5.
 - **Cloudflare Access** token verification against real keys, and the role table.
 - **D1 concurrency** for the rate limiter (tested against SQLite, whose locking differs).
-- The **sprint-aligned worker** writing to D1.
+- **The sprint-aligned worker** writing to D1.
+- **Human judgement of the model's actions** (the blinded sheet above) and the expert content-validity panel.
+
 
 ## 4. Your checklist (in order)
 
@@ -123,18 +147,24 @@ Sign in through the browser first, then check:
 | `POST /api/eval/insight` | **404** in production |
 | A request with no Access cookie | blocked by Access before it reaches the app |
 
-### 4.6 Re-measure the AI on the live model (the main open item)
-Why the old harness is not enough: `scripts/evaluate-coaching.mjs` calls `POST /api/eval/insight`, which (a) is hidden in production on purpose and (b) runs the **old** prompt through `buildPrompt`. It never executes `generateCoachingNote`, so it cannot measure the new pipeline.
+### 4.6 Re-measure the AI (largely done; what remains)
 
-Minimal change to make it measurable:
-1. In `functions/api/_lib/app.ts`, next to `/eval/insight` (it is already behind the production guard), add `POST /eval/note` taking `{ evidence }` and returning `generateCoachingNote(c.env.AI, evidence)` plus `latencyMs`.
-2. In `scripts/evaluate-coaching.mjs`, add a config `E` that posts each of the 16 Platform/Backend team-weeks (its evidence builders already exist) to `/eval/note`, 5 runs each.
-3. Run it against a **Preview** deployment where `ENVIRONMENT` is not `production` and `DEV_AUTH_ROLE=manager` is set (otherwise Access and the rate limit block 80 calls).
-4. Record: share of notes with `source:"model"`, validator rejection rate (fallbacks), p50/p95 latency, 3-run consistency (temperature 0 should make runs identical), and a blind template-vs-model preference (a teammate scores them). By construction false concern on healthy weeks should be 0; confirm it.
+Done locally with a token (section 3b). To repeat it, put `CLOUDFLARE_API_TOKEN` (a token with **Workers AI** permission) in `.env`, which is git-ignored, and run:
+```bash
+node --env-file=.env scripts/validation/live-model-eval.mjs --dry      # counts the calls first (no API use)
+node --env-file=.env scripts/validation/live-model-eval.mjs --runs=3   # about 51 calls, well inside the free tier
+```
+It resolves the account id from the token. Never paste the token in chat or commit it; rotate it when the project ends.
 
-Decision rule already adopted: keep the model-written action **only if** it passes the faithfulness checks **and** wins a blinded comparison against the template; otherwise ship the template.
+What remains:
+1. **Score the blinded sheet.** Two teammates fill `eval/validation/after/live_model_blind_sheet.csv` (preferred note, actionability and grounding 1-5) without opening `live_model_blind_key.csv`; then compute the model's win rate with a CI. Decision rule: keep the model-written action only if it passes the checks **and** wins more than 50% with a CI excluding 50%; otherwise ship the template.
+2. **Decide what to do about the repetitive output** (see 3b) before spending effort on scoring; improving the prompt is cheaper than scoring a weak one.
+3. **Re-run through the deployed endpoint** after deploying (the smoke test in 4.5 covers a single call).
+
+Why the older harness is still not enough: `scripts/evaluate-coaching.mjs` calls `POST /api/eval/insight`, which is hidden in production on purpose and runs the **old** prompt through `buildPrompt`. It never executes `generateCoachingNote`. Use `live-model-eval.mjs` for the new pipeline.
 
 Cost note: about 7 Workers AI neurons per note (free tier 10,000/day); healthy weeks no longer use any.
+
 
 ## 5. Running everything locally
 
@@ -155,6 +185,7 @@ node scripts/validation/simulate.mjs --set=both      # seeded early-warning eval
 node scripts/validation/faithfulness.mjs             # coaching-layer checks (E2b)
 node scripts/validation/replay-sprint5.mjs           # real Sprint 5 model outputs through the pipeline
 node scripts/validation/persignal.mjs --final --k=1.5 --h=14   # per-signal CUSUM experiment
+node --env-file=.env scripts/validation/live-model-eval.mjs    # real Workers AI model (needs CLOUDFLARE_API_TOKEN in .env)
 ```
 Reproducing a "before" number: `git worktree add --detach /tmp/old feature/p0-hardening && ln -s "$PWD/node_modules" /tmp/old/node_modules`, then pass `--lib=/tmp/old/functions/api/_lib` (faithfulness, replay) or `--root=/tmp/old` (stress test). Outputs are written under `eval/validation/{before,after}/`.
 
@@ -163,7 +194,7 @@ Reproducing a "before" number: `git worktree add --detach /tmp/old feature/p0-ha
 ## 6. Known open issues (most important first)
 
 1. **Raw ticket and event titles ship in the front-end bundle.** `src/data/jiraSignals.generated.json` and `calendarSignals.generated.json` contain per-issue `summary` and per-event `title` and are imported by `mockSignals.js`. The API strips them, the bundle does not. Fix: drop `details` in the ingest scripts before writing the files (and stop importing them in production). This is the main remaining privacy gap.
-2. **The AI is unmeasured after P0** (section 4.6).
+2. **The model's output quality is unproven.** It now works on the live model (70.6% of replies accepted) but is generic and repetitive, and nobody has scored it against the template (section 3b, 4.6). If it does not win the blinded comparison, ship the template.
 3. **Cycle time reads ~0 days on the refreshed Jira data.** Jira timestamps are real-time and the board was populated in one sitting, so issues finished "in minutes". It becomes realistic only as issues move over several days.
 4. **Calendar signal covers one week** (2026-W38). The October sprint shows the meeting load as a placeholder and excludes it from the score.
 5. **GitHub is still a placeholder** (excluded from the score). Without it, review-bottleneck strain is nearly invisible (recall 65% → 15% in the seeded evaluation).
@@ -200,6 +231,6 @@ The ingest (`npm run ingest:jira`, or the worker) reads this board, so editing i
 | `worker-ingestion/` | Daily Cron Worker: Jira + Google Calendar into D1 |
 | `migrations/0004_auth_rate.sql` | `role_assignments`, `rate_limits` |
 | `scripts/stress-test.mjs` | API robustness suite |
-| `scripts/validation/` | Seeded evaluation, faithfulness, replay and per-signal experiment |
+| `scripts/validation/` | Seeded evaluation, faithfulness, replay, per-signal experiment and `live-model-eval.mjs` (real model) |
 | `eval/validation/` | Generated evidence; `before/` and `after/` hold the comparable pairs |
 | `DEPLOY.md`, `.dev.vars.example` | Original deploy steps and local env template |
