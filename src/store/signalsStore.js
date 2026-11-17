@@ -18,7 +18,8 @@ export const useSignalsStore = create((set, get) => ({
   weeklyByTeam: {}, // teamId -> array of { week, jira, github, calendar }
   sourceByTeam: {}, // teamId -> 'hand-tuned' | 'live' | 'generated'
   consentByTeam: {}, // teamId -> { total, consented, minConsented, scoreAllowed } (FR18)
-  errorByTeam: {}, // teamId -> true when the backend was reachable but this team's data failed to load
+  errorByTeam: {},
+  githubSyncByTeam: {}, // teamId -> { status: 'ok' | 'error', lastRun } from the latest ingestion run // teamId -> true when the backend was reachable but this team's data failed to load
   loadedTeams: new Set(),
 
   // Loads a team's signals the first time it's viewed. Safe to call
@@ -29,8 +30,9 @@ export const useSignalsStore = create((set, get) => ({
 
     if (await probeApi()) {
       try {
-        const { weeks, source, consent } = await api.get(`/teams/${teamId}/signals`)
+        const { weeks, source, consent, githubSync } = await api.get(`/teams/${teamId}/signals`)
         set((state) => ({
+          githubSyncByTeam: { ...state.githubSyncByTeam, [teamId]: githubSync ?? null },
           errorByTeam: { ...state.errorByTeam, [teamId]: false },
           weeklyByTeam: { ...state.weeklyByTeam, [teamId]: weeks },
           sourceByTeam: { ...state.sourceByTeam, [teamId]: source },

@@ -320,7 +320,12 @@ app.get('/teams/:id/signals', async (c) => {
     jira: { issueCount: w.jira.issueCount, avgCycleTimeDays: w.jira.avgCycleTimeDays, sprintCompletionPct: w.jira.sprintCompletionPct },
     calendar: { avgMeetingHoursPerWeek: w.calendar.avgMeetingHoursPerWeek },
   }))
-  return c.json({ weeks: aggregated, source, consent })
+  // Latest GitHub sync outcome, so the UI can say "connected, no qualifying data yet".
+  const sync = await c.env.DB.prepare("SELECT status, updated_at FROM ingestion_status WHERE team_id = ? AND source = 'github'")
+    .bind(teamId)
+    .first<{ status: string; updated_at: number }>()
+  const githubSync = sync ? { status: sync.status, lastRun: new Date(sync.updated_at).toISOString() } : null
+  return c.json({ weeks: aggregated, source, consent, githubSync })
 })
 
 // ---------- admin: run ingestion now ----------

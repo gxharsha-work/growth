@@ -28,6 +28,16 @@ async function upsertSignalWeek(db: D1Database, teamId: string, isoWeek: string,
     .run()
 }
 
+async function recordStatus(db: D1Database, teamId: string, source: string, status: 'ok' | 'error', detail: string) {
+  await db
+    .prepare(
+      `INSERT INTO ingestion_status (team_id, source, status, detail, updated_at) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (team_id, source) DO UPDATE SET status = excluded.status, detail = excluded.detail, updated_at = excluded.updated_at`
+    )
+    .bind(teamId, source, status, detail, Date.now())
+    .run()
+}
+
 async function ingest(env: Env): Promise<string[]> {
   const log: string[] = []
   const isoWeek = getIsoWeek(new Date())
@@ -74,8 +84,10 @@ async function ingest(env: Env): Promise<string[]> {
         }
       }
       log.push(`✓ github signals written for ${teamId}: ${written} of ${githubResults.length} sprint(s)`)
+      await recordStatus(env.DB, teamId, 'github', 'ok', `${written} of ${githubResults.length} sprints qualify`)
     } catch (err) {
       log.push(`✗ github ingestion failed: ${(err as Error).message}`)
+      await recordStatus(env.DB, teamId, 'github', 'error', 'sync failed').catch(() => {})
     }
   }
 

@@ -567,6 +567,14 @@
   background: rgba(221, 154, 18, 0.16);
 }
 
+.hud-source-tag--connected {
+  color: #1d4f91;
+  background: rgba(37, 99, 235, 0.12);
+  white-space: normal;
+  text-align: right;
+  text-transform: none;
+}
+
 .hud-source-tag--demo {
   color: var(--ink-3);
   background: var(--wash);
