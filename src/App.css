@@ -78,3 +78,64 @@
   color: #3d4652;
   pointer-events: auto;
 }
+
+/* "How to read your village" legend, bottom-left above the build label */
+.legend-toggle {
+  position: fixed;
+  left: 24px;
+  bottom: 40px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3d4652;
+  cursor: pointer;
+}
+
+.legend-panel {
+  position: fixed;
+  left: 24px;
+  bottom: 84px;
+  z-index: 20;
+  width: min(340px, calc(100vw - 48px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #2b323b;
+}
+
+.legend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.legend-close {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #3d4652;
+}
+
+.legend-panel dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-row dt {
+  font-weight: 800;
+}
+
+.legend-row dd {
+  margin: 0;
+}

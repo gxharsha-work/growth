@@ -16,6 +16,7 @@ import { useAuthStore } from './store/authStore'
 import { getTeamWeek } from './logic/teamHealth'
 import './App.css'
 import BuildFooter from './ui/BuildFooter'
+import VillageLegend from './ui/VillageLegend'
 
 export default function App() {
   const cancelPlacing = useVillageStore((s) => s.cancelPlacing)
@@ -106,6 +107,7 @@ export default function App() {
       )}
       <TeamHUD />
       <Timeline />
+      <VillageLegend />
       <BuildFooter />
     </div>
   )
