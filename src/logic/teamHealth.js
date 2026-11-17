@@ -11,6 +11,7 @@ import {
   computeWeatherState,
   isEarlyWarning,
 } from './healthScore'
+import { explainWeek } from './earlyWarningExplain'
 
 const cache = new Map()
 
@@ -63,4 +64,12 @@ export function getTeamWeeklyHealth(teamId) {
 export function getTeamWeek(teamId, weekIndex) {
   const rows = getTeamWeeklyHealth(teamId)
   return rows[Math.max(0, Math.min(rows.length - 1, weekIndex))] ?? null
+}
+
+// Rule result for one week in plain words (threshold, baseline, drivers).
+// See earlyWarningExplain.js; null until the team's signals have loaded.
+export function getWeekExplanation(teamId, weekIndex) {
+  const rows = getTeamWeeklyHealth(teamId)
+  if (rows.length === 0) return null
+  return explainWeek(rows, Math.max(0, Math.min(rows.length - 1, weekIndex)))
 }

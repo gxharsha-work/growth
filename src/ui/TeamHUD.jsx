@@ -14,7 +14,7 @@ import { useAppStore } from '../store/appStore'
 import { useTeamsStore, listTeams } from '../store/teamsStore'
 import { useSignalsStore } from '../store/signalsStore'
 import { useAuthStore } from '../store/authStore'
-import { getTeamWeek } from '../logic/teamHealth'
+import { getTeamWeek, getWeekExplanation } from '../logic/teamHealth'
 import { levelFor } from '../logic/buildingStatus'
 import { SignalPill } from './SignalPill'
 import ConnectCalendar from './ConnectCalendar'
@@ -51,6 +51,7 @@ export default function TeamHUD() {
   // Subscribed purely so this re-renders once signals finish loading async
   // (getTeamWeek below reads the store imperatively, not reactively).
   const signalSource = useSignalsStore((s) => s.sourceByTeam[currentTeam])
+  const explanation = getWeekExplanation(currentTeam, currentWeek)
 
   const [editingId, setEditingId] = useState(null) // null = create mode
   const [name, setName] = useState('')
@@ -322,11 +323,18 @@ export default function TeamHUD() {
       </button>
 
       {!isCompare && (
-        <div className={`hud-warning-wrap${weekHealth?.earlyWarning ? ' hud-warning-wrap--visible' : ''}`}>
-          <div className="hud-warning">
-            <TriangleAlert size={16} />
-            <span>Early warning: rising cycle time and workload</span>
-          </div>
+        <div
+          className={`hud-warning-wrap${explanation?.flagged ? ' hud-warning-wrap--visible' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
+          {/* Text exists only when the rule fired this week, so nothing stale can be read. */}
+          {explanation?.flagged && (
+            <div className="hud-warning" title={explanation.rule}>
+              <TriangleAlert size={16} />
+              <span>{explanation.headline}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

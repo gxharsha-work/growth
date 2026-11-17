@@ -5,7 +5,7 @@ import { useAppStore } from '../store/appStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { useVillageStore } from '../store/villageStore'
 import { useSignalsStore } from '../store/signalsStore'
-import { getTeamWeek } from '../logic/teamHealth'
+import { getTeamWeek, getWeekExplanation } from '../logic/teamHealth'
 import Scene from '../scene/Scene'
 import './compareView.css'
 
@@ -28,6 +28,7 @@ export default function CompareView() {
         const team = teams[teamId]
         if (!team) return null // defensive: appStore.deleteTeam already prunes this
         const weekHealth = getTeamWeek(teamId, currentWeek)
+        const explanation = getWeekExplanation(teamId, currentWeek)
         return (
           <div className="compare-card glass" key={teamId}>
             <div className="compare-card-header">
@@ -36,13 +37,17 @@ export default function CompareView() {
             </div>
             <div
               className={`compare-warning-wrap${
-                weekHealth?.earlyWarning ? ' compare-warning-wrap--visible' : ''
+                explanation?.flagged ? ' compare-warning-wrap--visible' : ''
               }`}
+              role="status"
+              aria-live="polite"
             >
-              <div className="compare-warning">
-                <TriangleAlert size={14} />
-                Early warning: rising cycle time and workload
-              </div>
+              {explanation?.flagged && (
+                <div className="compare-warning" title={explanation.headline}>
+                  <TriangleAlert size={14} />
+                  Early warning: score {explanation.score}, below threshold {explanation.threshold}
+                </div>
+              )}
             </div>
             <div className="compare-canvas-wrap">
               <Canvas
