@@ -16,6 +16,7 @@ import { useSignalsStore } from '../store/signalsStore'
 import { useAuthStore } from '../store/authStore'
 import { getTeamWeek, getWeekExplanation } from '../logic/teamHealth'
 import { levelFor } from '../logic/buildingStatus'
+import { describeCohort } from '../logic/cohort'
 import { SignalPill } from './SignalPill'
 import ConnectCalendar from './ConnectCalendar'
 import CoachingNote from './CoachingNote'
@@ -63,6 +64,7 @@ export default function TeamHUD() {
   const weekHealth = getTeamWeek(currentTeam, currentWeek)
   // A week without enough data cannot be checked against the rule, so no banner.
   const showWarning = !!(explanation?.flagged && weekHealth?.enoughData)
+  const cohort = describeCohort(teams.find((t) => t.id === currentTeam), teams)
   const isCompare = viewMode === 'compare'
   const atCap = compareTeamIds.length >= 4
 
@@ -315,6 +317,23 @@ export default function TeamHUD() {
             <span className="hud-score-title">Team health</span>
             <span className="hud-score-label">Week {weekHealth.week}</span>
           </div>
+        </div>
+      )}
+
+      {!isCompare && weekHealth && (
+        <div className="hud-context glass">
+          {weekHealth.enoughData && explanation && (
+            <p className="hud-context-row" title={explanation.rule}>
+              <span>Baseline</span>
+              {explanation.baselineLine}
+            </p>
+          )}
+          {cohort && (
+            <p className="hud-context-row">
+              <span>Cohort</span>
+              {cohort.label}. {cohort.reason}
+            </p>
+          )}
         </div>
       )}
 

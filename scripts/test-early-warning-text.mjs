@@ -16,6 +16,7 @@ const out = await build({
       export { explainWeek, EARLY_WARNING_RATIO } from './src/logic/earlyWarningExplain'
       export { isEarlyWarning, computeHealthScore } from './src/logic/healthScore'
       export { getWeeklySignalsForTeam } from './src/data/mockSignals'
+      export { describeCohort } from './src/logic/cohort'
     `,
     resolveDir: ROOT, loader: 'js',
   },
@@ -94,6 +95,27 @@ await suite.test('no fixed warning sentence left in the UI', async () => {
     const src = fs.readFileSync(`${ROOT}${f}`, 'utf8')
     assert(!/rising cycle time and workload/.test(src), `${f} still has the fixed text`)
   }
+})
+
+// ---- IT-03 / FR8: cohort reason ----
+const T = (id, size, fn) => ({ id, cohort: { sizeBucket: size, functionType: fn } })
+const TEAMS = [T('platform', '6-10 engineers', 'Backend/Platform'), T('backend', '6-10 engineers', 'Backend/Platform'), T('solstice', '1-5 engineers', 'Growth Marketing'), T('new', 'Unspecified', 'Unspecified')]
+await suite.test('cohort reason names both tags, who set them, and the peer count', async () => {
+  const c = m.describeCohort(TEAMS[0], TEAMS)
+  assert(c.label === '6-10 engineers · Backend/Platform' && c.peerCount === 1 && /team lead tagged it/.test(c.reason) && /1 other team does/.test(c.reason), c.reason)
+  return c.reason
+})
+await suite.test('a team with no matching peer is told there is no comparison', async () => {
+  const c = m.describeCohort(TEAMS[2], TEAMS)
+  assert(c.peerCount === 0 && /no peer comparison/.test(c.reason), c.reason)
+  return c.reason
+})
+await suite.test('untagged team: explains tags are not set', async () => {
+  const c = m.describeCohort(TEAMS[3], TEAMS); assert(/not set yet/.test(c.reason), c.reason)
+})
+await suite.test('UI shows the baseline line and the cohort reason', async () => {
+  const hud = fs.readFileSync(`${ROOT}src/ui/TeamHUD.jsx`, 'utf8')
+  assert(hud.includes('explanation.baselineLine') && hud.includes('cohort.reason'), 'not rendered')
 })
 
 suite.done()
