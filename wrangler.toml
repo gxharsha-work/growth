@@ -30,3 +30,5 @@ ENVIRONMENT = "production"
 ACCESS_TEAM_DOMAIN = "growth-cmu.cloudflareaccess.com"
 ACCESS_AUD = "321a532af9058100b48c0ce4b752a474ac7522a3c9c542393cbdb2b4676b1940"
 AI_TIMEOUT_MS = "8000"
+# Signed-in users from these domains with no role row get read-only (leadership) access.
+READONLY_DOMAINS = "andrew.cmu.edu,cmu.edu"

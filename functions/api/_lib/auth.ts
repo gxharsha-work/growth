@@ -17,6 +17,7 @@ export type AuthEnv = {
   ENVIRONMENT?: string
   DEV_AUTH_ROLE?: string
   ADMIN_EMAILS?: string // comma-separated; admins may rename and delete teams
+  READONLY_DOMAINS?: string // comma-separated; signed-in users from these domains with no role get 'leadership'
 }
 
 export type AuthedUser = { email: string; role: Role; isAdmin: boolean }
@@ -105,6 +106,15 @@ export async function verifyAccessJwt(token: string, env: AuthEnv): Promise<stri
   return payload.email.toLowerCase()
 }
 
+// A signed-in user with no role row, from an allowed domain (for example the
+// university), gets read-only access. Exact domain match: "andrew.cmu.edu"
+// and "cmu.edu" are listed separately.
+export function defaultRole(env: AuthEnv, email: string): Role | null {
+  const domain = email.split('@')[1] ?? ''
+  const allowed = (env.READONLY_DOMAINS ?? '').split(',').map((d) => d.trim().toLowerCase()).filter(Boolean)
+  return allowed.includes(domain) ? 'leadership' : null
+}
+
 export async function lookupRole(db: D1Database, email: string): Promise<Role | null> {
   const row = await db
     .prepare('SELECT role FROM role_assignments WHERE email = ?')
@@ -139,7 +149,7 @@ export async function resolveUser(
   if (!email) return { user: null, unauthenticated: true }
 
   const isAdmin = adminEmails(env).has(email)
-  const role = isAdmin ? 'manager' : await lookupRole(env.DB, email)
+  const role = isAdmin ? 'manager' : (await lookupRole(env.DB, email)) ?? defaultRole(env, email)
   if (!role) return { user: null, unauthenticated: false }
   return { user: { email, role, isAdmin }, unauthenticated: false }
 }

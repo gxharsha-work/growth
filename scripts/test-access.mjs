@@ -98,4 +98,19 @@ await suite.test(`issuer must be the configured team domain (${ACCESS.domain})`,
   expect(await call(env, 'GET', '/api/teams', { email: ADMIN }), 401)
 })
 
+// ---- university domains: read-only by default ----
+await suite.test('CMU emails with no role get read-only leadership; other domains still 403; a role row wins', async () => {
+  const { env } = prodEnv({ roles: { 'lead@andrew.cmu.edu': 'manager' }, extra: { READONLY_DOMAINS: 'andrew.cmu.edu,cmu.edu' } })
+  for (const email of ['student@andrew.cmu.edu', 'prof@cmu.edu']) {
+    const me = await call(env, 'GET', '/api/me', { email })
+    assert(me.status === 200 && me.json.role === 'leadership' && !me.json.isAdmin, `${email}: ${me.text}`)
+    assert((await call(env, 'GET', '/api/teams', { email })).status === 200, `${email} read`)
+    assert((await call(env, 'POST', '/api/teams', { email, body: { name: 'X' } })).status === 403, `${email} write`)
+    assert((await call(env, 'DELETE', '/api/teams/solstice', { email })).status === 403, `${email} delete`)
+  }
+  assert((await call(env, 'GET', '/api/teams', { email: 'someone@gmail.com' })).status === 403, 'gmail without role')
+  assert((await call(env, 'GET', '/api/teams', { email: 'x@evilcmu.edu' })).status === 403, 'look-alike domain')
+  assert((await call(env, 'GET', '/api/me', { email: 'lead@andrew.cmu.edu' })).json.role === 'manager', 'role row should win')
+})
+
 suite.done()
