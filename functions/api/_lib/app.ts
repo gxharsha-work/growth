@@ -107,7 +107,9 @@ app.use('*', async (c, next) => {
   if (!user) return c.json({ error: 'not allowed: no role assigned' }, 403)
 
   const isWrite = c.req.method !== 'GET'
-  const needsManager = isWrite || c.req.path.endsWith('/insight')
+  // Anyone signed in may report an issue, including read-only leadership.
+  const isFeedback = c.req.method === 'POST' && c.req.path === '/api/feedback'
+  const needsManager = (isWrite && !isFeedback) || c.req.path.endsWith('/insight')
   if (needsManager && user.role !== 'manager') {
     return c.json({ error: 'manager role required' }, 403)
   }
@@ -309,6 +311,33 @@ app.get('/teams/:id/signals', async (c) => {
     calendar: { avgMeetingHoursPerWeek: w.calendar.avgMeetingHoursPerWeek },
   }))
   return c.json({ weeks: aggregated, source, consent })
+})
+
+// ---------- beta feedback ----------
+const MAX_FEEDBACK = 2000
+const FEEDBACK_PER_DAY = 20
+
+app.post('/feedback', async (c) => {
+  const body = await c.req.json<{ message?: unknown; page?: unknown; buildSha?: unknown }>()
+  const message = typeof body?.message === 'string' ? body.message.trim() : ''
+  if (!message) return c.json({ error: 'message is required' }, 400)
+  if (message.length > MAX_FEEDBACK) return c.json({ error: `message is limited to ${MAX_FEEDBACK} characters` }, 400)
+  const email = c.get('user').email
+  const since = Date.now() - 86_400_000
+  const count = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM feedback WHERE email = ? AND created_at > ?').bind(email, since).first<{ n: number }>()
+  if ((count?.n ?? 0) >= FEEDBACK_PER_DAY) return c.json({ error: 'daily feedback limit reached' }, 429)
+  const page = typeof body.page === 'string' ? body.page.slice(0, 200) : ''
+  const buildSha = typeof body.buildSha === 'string' ? body.buildSha.slice(0, 64) : ''
+  await c.env.DB.prepare('INSERT INTO feedback (created_at, email, page, build_sha, message) VALUES (?, ?, ?, ?, ?)')
+    .bind(Date.now(), email, page, buildSha, message)
+    .run()
+  return c.json({ ok: true }, 201)
+})
+
+app.get('/feedback', async (c) => {
+  if (!c.get('user').isAdmin) return c.json(ADMIN_ONLY, 403)
+  const { results } = await c.env.DB.prepare('SELECT id, created_at, email, page, build_sha, message FROM feedback ORDER BY created_at DESC LIMIT 200').all()
+  return c.json(results ?? [])
 })
 
 // ---------- roster and consent (FR4, FR18) ----------

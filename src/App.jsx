@@ -17,6 +17,7 @@ import { getTeamWeek } from './logic/teamHealth'
 import './App.css'
 import BuildFooter from './ui/BuildFooter'
 import VillageLegend from './ui/VillageLegend'
+import ReportIssue from './ui/ReportIssue'
 
 export default function App() {
   const cancelPlacing = useVillageStore((s) => s.cancelPlacing)
@@ -107,7 +108,10 @@ export default function App() {
       )}
       <TeamHUD />
       <Timeline />
-      <VillageLegend />
+      <div className="corner-tools">
+        <VillageLegend />
+        <ReportIssue />
+      </div>
       <BuildFooter />
     </div>
   )
