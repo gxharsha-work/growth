@@ -33,6 +33,10 @@ const SOURCE_BADGE = {
   live: { label: 'Live', tip: "Ingested daily from this team's real tools." },
   demo: { label: 'Simulated', tip: 'Sample data for a demo team, not real activity.' },
   placeholder: { label: 'No data', tip: 'Not connected for this team, so it is left out of the score.' },
+  connected: {
+    label: 'Connected · no qualifying data yet',
+    tip: 'GitHub sync works. Only PRs and human-authored commits on main by opted-in members count, and this period has none yet, so GitHub is left out of the score.',
+  },
 }
 const counted = (state) => state === 'live' || state === 'demo'
 
@@ -69,6 +73,7 @@ export default function TeamHUD() {
   const signalSource = useSignalsStore((s) => s.sourceByTeam[currentTeam])
   const loadError = useSignalsStore((s) => s.errorByTeam[currentTeam])
   const withheld = useSignalsStore((s) => s.consentByTeam[currentTeam]?.scoreAllowed === false)
+  const githubSynced = useSignalsStore((s) => s.githubSyncByTeam[currentTeam]?.status === 'ok')
   const explanation = getWeekExplanation(currentTeam, currentWeek)
 
   const [editingId, setEditingId] = useState(null) // null = create mode
@@ -401,9 +406,17 @@ export default function TeamHUD() {
           label={
             counted(weekHealth.sources?.github ?? 'demo')
               ? `GitHub: ${weekHealth.signals.github.avgReviewTurnaroundHours}h reviews · ${weekHealth.signals.github.pctCommitsAfter7pm}% after 7pm`
-              : 'GitHub: not connected'
+              : githubSynced
+                ? 'GitHub: connected'
+                : 'GitHub: not connected'
           }
-          tag={<SourceTag state={weekHealth.sources?.github ?? 'demo'} />}
+          tag={
+            <SourceTag
+              state={
+                !counted(weekHealth.sources?.github ?? 'demo') && githubSynced ? 'connected' : (weekHealth.sources?.github ?? 'demo')
+              }
+            />
+          }
         />
       )}
 

@@ -15,7 +15,7 @@ import { ROOT, makeSuite, assert } from './lib/api-harness.mjs'
 // zustand v5 renders from each store's INITIAL state on the server, so each
 // case is its own bundle whose app and signals stores start on the chosen
 // team and week (a text substitution in those two files, test-only).
-async function renderCase(teamId, week, { loaded = true, error = false, role = 'manager', isAdmin = true } = {}) {
+async function renderCase(teamId, week, { loaded = true, error = false, role = 'manager', isAdmin = true, githubSync = null } = {}) {
   const initial = {
     name: 'test-initial-state',
     setup(b) {
@@ -24,6 +24,7 @@ async function renderCase(teamId, week, { loaded = true, error = false, role = '
         code = code.replace('currentTeam: firstTeamId(),', `currentTeam: ${JSON.stringify(teamId)},`).replace('currentWeek: 0,', `currentWeek: ${week},`)
         if (loaded) code = code.replace('weeklyByTeam: {},', `weeklyByTeam: { [${JSON.stringify(teamId)}]: getWeeklySignalsForTeam(${JSON.stringify(teamId)}) },`)
         code = code.replace("role: 'manager',\n  isAdmin: true,", `role: ${JSON.stringify(role)},\n  isAdmin: ${isAdmin},`)
+        if (githubSync) code = code.replace('githubSyncByTeam: {},', `githubSyncByTeam: { [${JSON.stringify(teamId)}]: ${JSON.stringify(githubSync)} },`)
         if (error) code = code.replace('errorByTeam: {},', `errorByTeam: { [${JSON.stringify(teamId)}]: true },`)
         code = code.replace('sourceByTeam: {},', `sourceByTeam: { [${JSON.stringify(teamId)}]: 'hand-tuned' },`)
         return { contents: code, loader: 'jsx' }
@@ -48,7 +49,7 @@ async function renderCase(teamId, week, { loaded = true, error = false, role = '
   // the repo to resolve them: node_modules/.cache is git-ignored.
   const dir = path.join(ROOT, 'node_modules', '.cache', 'growth-test')
   fs.mkdirSync(dir, { recursive: true })
-  const file = path.join(dir, `hud-${teamId}-${week}-${loaded}-${error}-${role}-${isAdmin}.mjs`)
+  const file = path.join(dir, `hud-${teamId}-${week}-${loaded}-${error}-${role}-${isAdmin}-${githubSync?.status ?? 'none'}.mjs`)
   fs.writeFileSync(file, out.outputFiles[0].text)
   return (await import(pathToFileURL(file).href)).html
 }
@@ -102,6 +103,15 @@ await suite.test('team lead (manager, not admin) sees no delete and no rename, o
 await suite.test('leadership (read-only) sees no edit, delete or create controls', async () => {
   const c = controls(await renderCase('platform', 0, { role: 'leadership', isAdmin: false }))
   assert(!c.del && !c.rename && !c.edit && !c.create, JSON.stringify(c))
+})
+// ---- GitHub badge: connected vs not connected (live team without qualifying GitHub data) ----
+await suite.test('GitHub synced but no qualifying data: "Connected · no qualifying data yet" with tooltip', async () => {
+  const html = await renderCase('solstice', 1, { githubSync: { status: 'ok', lastRun: '2026-11-17T04:48:00Z' } })
+  assert(html.includes('Connected · no qualifying data yet') && html.includes('GitHub: connected') && html.includes('human-authored commits on main'), 'badge missing')
+})
+await suite.test('GitHub never synced: "No data" and "GitHub: not connected"', async () => {
+  const html = await renderCase('solstice', 1)
+  assert(html.includes('GitHub: not connected') && !html.includes('Connected · no qualifying'), 'wrong badge')
 })
 await suite.test('coaching errors never show raw server text', async () => {
   const src = fs.readFileSync(`${ROOT}src/ui/CoachingNote.jsx`, 'utf8')

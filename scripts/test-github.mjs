@@ -158,6 +158,15 @@ await suite.test('POST /api/admin/refresh: admin runs ingestion via the binding;
   assert((await call(noBinding, 'POST', '/api/admin/refresh', { email: 'admin@example.edu', body: {} })).status === 503, 'no binding')
 })
 
+await suite.test('API: latest GitHub sync outcome is reported (connected even with no qualifying data)', async () => {
+  const { sqlite, env } = devEnv()
+  addLiveTeam(sqlite, 'pilot', 'Pilot', [[20, 3, 80, 6]])
+  assert((await call(env, 'GET', '/api/teams/pilot/signals')).json.githubSync === null, 'expected null before any sync')
+  sqlite.prepare("INSERT INTO ingestion_status (team_id, source, status, detail, updated_at) VALUES ('pilot', 'github', 'ok', '0 of 2 sprints qualify', ?)").run(Date.now())
+  const r = await call(env, 'GET', '/api/teams/pilot/signals')
+  assert(r.json.githubSync?.status === 'ok' && r.json.weeks[0].sources.github === 'placeholder', JSON.stringify(r.json.githubSync))
+})
+
 await suite.test('roster maps Solstice GitHub logins (migration 0007)', async () => {
   const { sqlite } = devEnv()
   const rows = sqlite.prepare("SELECT name, github_logins FROM roster_members WHERE team_id='solstice' AND github_logins != ''").all()
