@@ -18,7 +18,7 @@ import { checkCoachingRateLimit } from './ratelimit'
 import { MIN_COVERAGE } from './scoring'
 import { getRoster, summarizeConsent, parseRosterCsv } from './roster'
 
-type Env = AuthEnv & { AI: Ai; AI_TIMEOUT_MS?: string }
+type Env = AuthEnv & { AI: Ai; AI_TIMEOUT_MS?: string; ASSETS?: Fetcher }
 type Vars = { user: AuthedUser }
 
 type TeamRow = {
@@ -119,6 +119,50 @@ app.use('*', async (c, next) => {
 const ADMIN_ONLY = { error: 'admin role required' }
 
 app.get('/me', (c) => c.json(c.get('user')))
+
+// ---------- health ----------
+// D1 reachability, Workers AI binding (checked, never called: no model cost),
+// freshness of the daily ingestion, and the build this deployment serves.
+const INGESTION_FRESH_HOURS = 36 // daily cron plus margin (data freshness NFR: 24-48 h)
+
+app.get('/health', async (c) => {
+  const checks: Record<string, unknown> = {}
+  let d1Ok = false
+  try {
+    const t0 = Date.now()
+    await c.env.DB.prepare('SELECT 1').first()
+    checks.d1 = { status: 'ok', latencyMs: Date.now() - t0 }
+    d1Ok = true
+  } catch {
+    checks.d1 = { status: 'down' }
+  }
+
+  const aiBound = typeof (c.env.AI as { run?: unknown } | undefined)?.run === 'function'
+  checks.workersAi = { status: aiBound ? 'bound' : 'missing' }
+
+  let ingestionFresh = false
+  if (d1Ok) {
+    const row = await c.env.DB.prepare("SELECT MAX(updated_at) AS last FROM signal_weeks WHERE source IN ('jira', 'calendar')").first<{ last: number | null }>()
+    if (row?.last) {
+      const ageHours = Math.round(((Date.now() - row.last) / 3_600_000) * 10) / 10
+      ingestionFresh = ageHours <= INGESTION_FRESH_HOURS
+      checks.ingestion = { status: ingestionFresh ? 'fresh' : 'stale', lastRun: new Date(row.last).toISOString(), ageHours }
+    } else {
+      checks.ingestion = { status: 'none' }
+    }
+  }
+
+  let build: unknown = { sha: 'unknown' }
+  try {
+    const res = await c.env.ASSETS?.fetch(new Request(new URL('/build.json', c.req.url)))
+    if (res?.ok) build = await res.json()
+  } catch {
+    // build info is informational only
+  }
+
+  const status = !d1Ok ? 'down' : aiBound && ingestionFresh ? 'ok' : 'degraded'
+  return c.json({ status, checks, build, time: new Date().toISOString() }, d1Ok ? 200 : 503)
+})
 
 // ---------- teams ----------
 

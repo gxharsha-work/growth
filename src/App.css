@@ -63,3 +63,18 @@
 .empty-village-cta:hover {
   transform: translateY(-1px);
 }
+
+/* release and build identity, bottom-left, out of the way */
+.build-footer {
+  position: fixed;
+  left: 24px;
+  bottom: 10px;
+  z-index: 5;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 600;
+  color: #3d4652;
+  pointer-events: auto;
+}
