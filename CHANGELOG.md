@@ -4,7 +4,8 @@
 
 Live at `growth-3it.pages.dev` behind Cloudflare Access. Branch `sprint9/beta`.
 
-- **Access control.** Cloudflare Access (one-time PIN email login) protects the site and every preview URL. The API verifies the Access token. Only admins (`ADMIN_EMAILS`) can rename or delete teams.
+- **Access control.** Cloudflare Access (one-time PIN email login) protects the site and every preview URL. CMU emails get read-only access by default. The API verifies the Access token. Only admins (`ADMIN_EMAILS`) can rename or delete teams.
+- **GitHub ingestion (FR2).** PR review turnaround and after-hours commit share per sprint, counting opted-in members only. Admins can refresh data on demand.
 - **Privacy.** No API response contains ticket summaries or calendar event titles, and the database no longer stores them. The ingestion Worker no longer fetches them, and its public trigger URL is gone.
 - **Consent (FR18) and roster (FR4).** The roster lives in D1 and can be imported from CSV. A live team is scored only after 3 or more members opt in, and the HUD shows coverage such as "4 of 6 opted in".
 - **Explainable early warning.** The banner states the rule result for the selected week, with its numbers and the signals that dropped most. The HUD shows the baseline and the reason for the team's cohort.

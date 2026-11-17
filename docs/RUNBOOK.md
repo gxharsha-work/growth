@@ -45,6 +45,7 @@ D1 keeps point-in-time history: 7 days on the Workers Free plan, 30 days on Work
 
 | Secret | Where | How |
 | --- | --- | --- |
+| GitHub token (read-only) | Worker `GITHUB_TOKEN` | Create a fine-grained token at github.com/settings/personal-access-tokens: repository `gxharsha-work/growth` only; Contents, Pull requests and Metadata read-only. Run `npx wrangler secret put GITHUB_TOKEN` in `worker-ingestion/`, then revoke the old one. |
 | Jira API token | Worker `MY_ATLASSIAN_TOKEN` | Create a new token at id.atlassian.com, run `npx wrangler secret put MY_ATLASSIAN_TOKEN` in `worker-ingestion/`, then revoke the old one. |
 | Google Calendar refresh token and client secret | Worker `GOOGLE_CALENDAR_REFRESH_TOKEN`, `GOOGLE_CALENDAR_CLIENT_SECRET` | Run `npm run auth:calendar` locally for a new refresh token, then `npx wrangler secret put` each one. |
 | Admin list | Pages secret `ADMIN_EMAILS` | See above. |
@@ -55,6 +56,10 @@ Secrets live only in Cloudflare and in a local, git-ignored `.env`. They are nev
 ## Reset the demo teams
 
 `node scripts/reset-demo.mjs` prints the SQL. Add `--remote` to apply it. This restores Platform and Backend to their seeded state and leaves the live Solstice team alone.
+
+## Run ingestion now
+
+An admin can click **Refresh data now** in the Roster card, or call `POST /api/admin/refresh`. Use it after recording consent, so GitHub numbers update without waiting for the 13:00 UTC cron.
 
 ## Check health
 

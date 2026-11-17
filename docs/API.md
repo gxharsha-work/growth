@@ -10,9 +10,9 @@ All routes live under `https://growth-3it.pages.dev/api/` and are served by Clou
 
 | Role | Who | Can do |
 | --- | --- | --- |
-| `leadership` | Email listed in D1 `role_assignments` | Read everything. Send feedback. |
+| `leadership` | Email listed in D1 `role_assignments`, or any @andrew.cmu.edu / @cmu.edu email with no role (`READONLY_DOMAINS`) | Read everything. Send feedback. |
 | `manager` (team lead) | Email listed in D1 `role_assignments` | Everything leadership can, plus edit villages and cohort tags, record consent, import rosters, get AI coaching. |
-| admin | Email in the `ADMIN_EMAILS` secret | Everything a manager can, plus rename and delete teams, and read feedback. |
+| admin | Email in the `ADMIN_EMAILS` secret | Everything a manager can, plus rename and delete teams, read feedback, and run ingestion now. |
 
 - Status codes: **401** not signed in or a bad token. **403** signed in without the needed role. **503** the Access key server could not be reached (fails closed).
 - Every response is JSON with `Cache-Control: no-store`. Errors look like `{"error": "..."}` and never include a stack trace.
@@ -38,6 +38,7 @@ All routes live under `https://growth-3it.pages.dev/api/` and are served by Clou
 | POST | `/api/insight` | manager | One coaching note for a team and week |
 | POST | `/api/feedback` | any | "Report an issue" |
 | GET | `/api/feedback` | admin | Read reports |
+| POST | `/api/admin/refresh` | admin | Run the ingestion Worker now (Jira, GitHub, calendar) via its service binding |
 | POST | `/api/eval/insight` | dev only | Evaluation harness. Returns 404 in production |
 
 ## Examples
