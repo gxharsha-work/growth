@@ -348,6 +348,8 @@ export default function TeamHUD() {
               <span>{explanation.headline}</span>
             </div>
           )}
+        </div>
+      )}
 
       {!isCompare && weekHealth && (
         <div className="hud-context glass">
@@ -425,9 +427,6 @@ export default function TeamHUD() {
         {isCompare ? <ArrowLeft size={15} /> : <ArrowLeftRight size={15} />}
         {isCompare ? 'Back to village' : 'Compare teams'}
       </button>
-
-        </div>
-      )}
     </div>
   )
 }

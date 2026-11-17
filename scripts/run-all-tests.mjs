@@ -34,6 +34,7 @@ const UNIT = [
   'scripts/test-roster-consent.mjs',
   'scripts/test-health.mjs',
   'scripts/test-feedback.mjs',
+  'scripts/test-hud-render.mjs',
 ]
 for (const file of UNIT) {
   const r = run('node', ['--no-warnings', file])
