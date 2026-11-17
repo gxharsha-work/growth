@@ -9,6 +9,8 @@ import {
   computeCapabilityScore,
   computeGardenScore,
   computeWeatherState,
+  computeDataCoverage,
+  MIN_COVERAGE,
   isEarlyWarning,
 } from './healthScore'
 import { explainWeek } from './earlyWarningExplain'
@@ -42,6 +44,7 @@ export function getTeamWeeklyHealth(teamId) {
 
   const rows = weeks.map((signals, i) => {
     const earlyWarning = isEarlyWarning(scores, i)
+    const coverage = computeDataCoverage(signals.sources)
     return {
       week: signals.week,
       period: signals.period ?? null, // sprint/week label for the timeline
@@ -49,6 +52,8 @@ export function getTeamWeeklyHealth(teamId) {
       sources: signals.sources ?? null, // provenance, for the HUD source tags
       score: scores[i],
       earlyWarning,
+      coverage, // share of score weight from counted signals (0-1)
+      enoughData: coverage >= MIN_COVERAGE, // false -> UI shows "Not enough data"
       capabilityScore: capabilityScores[i],
       capabilityTrend:
         i === 0 ? 0 : capabilityScores[i] - capabilityScores[i - 1],

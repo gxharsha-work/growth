@@ -3,7 +3,7 @@
 // stale or hand-edited browser state can never reach the prompt.
 
 import { getSignalsForTeam, type WeekSignals } from './signals'
-import { computeHealthScore, isEarlyWarning } from './scoring'
+import { computeHealthScore, computeDataCoverage, isEarlyWarning } from './scoring'
 import type { CoachingEvidence } from './coaching'
 
 type TeamRow = { id: string; name: string; size_bucket: string; function_type: string }
@@ -62,7 +62,7 @@ export async function buildEvidence(
   db: D1Database,
   teamId: string,
   week: number
-): Promise<{ evidence: CoachingEvidence; source: string } | null> {
+): Promise<{ evidence: CoachingEvidence; source: string; coverage: number } | null> {
   const team = await db
     .prepare('SELECT id, name, size_bucket, function_type FROM teams WHERE id = ?')
     .bind(teamId)
@@ -90,5 +90,5 @@ export async function buildEvidence(
     prevSignals: index > 0 ? aggregateSignals(weeks[index - 1]) : null,
     peer: await selectPeer(db, team, week),
   }
-  return { evidence, source }
+  return { evidence, source, coverage: computeDataCoverage(current.sources) }
 }

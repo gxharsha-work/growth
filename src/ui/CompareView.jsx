@@ -33,16 +33,18 @@ export default function CompareView() {
           <div className="compare-card glass" key={teamId}>
             <div className="compare-card-header">
               <span className="compare-team-name">{team.name}</span>
-              <span className="compare-score">{weekHealth?.score ?? '–'}</span>
+              <span className="compare-score" title={weekHealth && !weekHealth.enoughData ? 'Not enough data' : undefined}>
+                {weekHealth?.enoughData ? weekHealth.score : '–'}
+              </span>
             </div>
             <div
               className={`compare-warning-wrap${
-                explanation?.flagged ? ' compare-warning-wrap--visible' : ''
+                explanation?.flagged && weekHealth?.enoughData ? ' compare-warning-wrap--visible' : ''
               }`}
               role="status"
               aria-live="polite"
             >
-              {explanation?.flagged && (
+              {explanation?.flagged && weekHealth?.enoughData && (
                 <div className="compare-warning" title={explanation.headline}>
                   <TriangleAlert size={14} />
                   Early warning: score {explanation.score}, below threshold {explanation.threshold}

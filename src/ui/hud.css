@@ -94,6 +94,12 @@
   background: rgba(229, 72, 77, 0.13);
 }
 
+/* "Not enough data": neutral grey, never the red of a low score */
+.hud-team-score--none {
+  color: #5b6472;
+  background: rgba(91, 100, 114, 0.12);
+}
+
 .hud-team--checked {
   background: var(--accent-soft);
   color: var(--accent);
@@ -281,6 +287,10 @@
 
 .hud-score--low {
   --level: var(--bad);
+}
+
+.hud-score--none {
+  --level: #5b6472;
 }
 
 .hud-ring {

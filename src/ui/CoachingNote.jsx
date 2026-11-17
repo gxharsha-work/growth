@@ -50,7 +50,7 @@ export default function CoachingNote({ teamId, weekHealth }) {
     } catch (err) {
       if (keyRef.current !== requestKey) return
       // The backend refuses coaching on demo/generated teams (no live data).
-      setError(err.message.includes('demo_data') ? 'demo' : err.message)
+      setError(err.message.includes('demo_data') ? 'demo' : err.message.includes('not_enough_data') ? 'not_enough_data' : err.message)
       setPhase('error')
     }
   }
@@ -58,7 +58,7 @@ export default function CoachingNote({ teamId, weekHealth }) {
   if (!team || !weekHealth) return null
 
   return (
-    <div className="coaching-note">
+    <div className="coaching-note" role="status" aria-live="polite">
       {phase === 'idle' && (
         <div className="coach-speech">
           <CoachAvatar mood={weekHealth.earlyWarning ? 'concerned' : 'happy'} />
@@ -118,6 +118,8 @@ export default function CoachingNote({ teamId, weekHealth }) {
           <div className="coach-bubble glass coach-bubble--error">
             {error === 'demo'
               ? 'AI coaching needs a team with live data — this team is on demo data.'
+              : error === 'not_enough_data'
+              ? 'Not enough data this week for a coaching note.'
               : `Couldn't generate a suggestion right now (${error}). The score and signals above are unaffected.`}
             <button className="coaching-note-reset coach-bubble-retry" onClick={() => setPhase('idle')}>
               Try again

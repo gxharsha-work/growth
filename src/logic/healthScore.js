@@ -104,6 +104,24 @@ export function computeHealthScore(weekSignals, sources) {
   return Math.round(clamp(composite, 0, 100))
 }
 
+// --- data coverage -----------------------------------------------------------
+// Share of the score's weight that comes from counted (live or demo) signals.
+// Below MIN_COVERAGE the week shows "Not enough data" instead of a number.
+// Display rule only: computeHealthScore and the early-warning rule are unchanged.
+export const MIN_COVERAGE = 0.4
+
+export function computeDataCoverage(sources) {
+  if (!sources) return 1
+  const parts = [
+    [WEIGHTS.cycleTime, sources.jira],
+    [WEIGHTS.completion, sources.jira],
+    [WEIGHTS.reviewTurnaround, sources.github],
+    [WEIGHTS.afterHoursCommits, sources.github],
+    [WEIGHTS.meetingLoad, sources.calendar],
+  ]
+  return Math.round(parts.reduce((s, [w, src]) => s + (sourceIncluded(src) ? w : 0), 0) * 100) / 100
+}
+
 // --- narrower sub-scores, used to drive specific visuals --------------------
 // These reuse the same normalization but only look at the signals that make
 // sense for a given building's "story" (see CONNECTING SCORE TO VISUALS).

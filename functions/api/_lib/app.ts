@@ -15,6 +15,7 @@ import { generateCoachingNote, buildPrompt, type CoachingEvidence } from './coac
 import { buildEvidence } from './evidence'
 import { resolveUser, type AuthEnv, type AuthedUser } from './auth'
 import { checkCoachingRateLimit } from './ratelimit'
+import { MIN_COVERAGE } from './scoring'
 
 type Env = AuthEnv & { AI: Ai; AI_TIMEOUT_MS?: string }
 type Vars = { user: AuthedUser }
@@ -291,6 +292,11 @@ app.post('/insight', async (c) => {
   // a team with live Jira signal is eligible.
   if (built.source !== 'live') {
     return c.json({ error: 'demo_data' }, 403)
+  }
+
+  // Too little data to trust the score: no note at all, rather than one about a partial picture.
+  if (built.coverage < MIN_COVERAGE) {
+    return c.json({ error: 'not_enough_data', coverage: built.coverage }, 422)
   }
 
   try {

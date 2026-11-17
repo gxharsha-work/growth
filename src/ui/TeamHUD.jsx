@@ -61,6 +61,8 @@ export default function TeamHUD() {
   const inputRef = useRef(null)
 
   const weekHealth = getTeamWeek(currentTeam, currentWeek)
+  // A week without enough data cannot be checked against the rule, so no banner.
+  const showWarning = !!(explanation?.flagged && weekHealth?.enoughData)
   const isCompare = viewMode === 'compare'
   const atCap = compareTeamIds.length >= 4
 
@@ -153,9 +155,14 @@ export default function TeamHUD() {
                 onClick={() => (isCompare ? toggleCompareTeam(team.id) : setTeam(team.id))}
               >
                 <span className="hud-team-name">{team.name}</span>
-                {row && (
+                {row && row.enoughData && (
                   <span className={`hud-team-score hud-team-score--${levelFor(row.score)}`}>
                     {row.score}
+                  </span>
+                )}
+                {row && !row.enoughData && (
+                  <span className="hud-team-score hud-team-score--none" title="Not enough data">
+                    –
                   </span>
                 )}
               </button>
@@ -266,10 +273,32 @@ export default function TeamHUD() {
         )}
       </div>
 
-      {!isCompare && weekHealth && (
-        <div className={`hud-score glass hud-score--${levelFor(weekHealth.score)}`}>
+      {!isCompare && weekHealth && !weekHealth.enoughData && (
+        <div className="hud-score glass hud-score--none" role="status" aria-live="polite">
           <div className="hud-ring">
-            <svg viewBox="0 0 60 60" width="60" height="60">
+            <svg viewBox="0 0 60 60" width="60" height="60" aria-hidden="true">
+              <circle className="hud-ring-track" cx="30" cy="30" r={RING_RADIUS} />
+            </svg>
+            <span className="hud-score-value">–</span>
+          </div>
+          <div className="hud-score-text">
+            <span className="hud-score-title">Not enough data</span>
+            <span className="hud-score-label">
+              Week {weekHealth.week}: only {Math.round(weekHealth.coverage * 100)}% of the score's signals have data (needs 40%)
+            </span>
+          </div>
+        </div>
+      )}
+
+      {!isCompare && weekHealth && weekHealth.enoughData && (
+        <div
+          className={`hud-score glass hud-score--${levelFor(weekHealth.score)}`}
+          role="status"
+          aria-live="polite"
+          aria-label={`Team health score ${weekHealth.score} out of 100, week ${weekHealth.week}`}
+        >
+          <div className="hud-ring">
+            <svg viewBox="0 0 60 60" width="60" height="60" aria-hidden="true">
               <circle className="hud-ring-track" cx="30" cy="30" r={RING_RADIUS} />
               <circle
                 className="hud-ring-value"
@@ -306,8 +335,13 @@ export default function TeamHUD() {
       )}
 
       {/* Coaching is only meaningful on live data; demo/generated teams show why. */}
-      {!isCompare && weekHealth && signalSource === 'live' && (
+      {!isCompare && weekHealth && signalSource === 'live' && weekHealth.enoughData && (
         <CoachingNote teamId={currentTeam} weekHealth={weekHealth} />
+      )}
+      {!isCompare && weekHealth && signalSource === 'live' && !weekHealth.enoughData && (
+        <div className="hud-signal hud-signal--muted glass" role="status">
+          Not enough data this week for a score or a coaching note.
+        </div>
       )}
       {!isCompare && weekHealth && signalSource && signalSource !== 'live' && (
         <div className="hud-signal hud-signal--muted glass">
@@ -324,12 +358,12 @@ export default function TeamHUD() {
 
       {!isCompare && (
         <div
-          className={`hud-warning-wrap${explanation?.flagged ? ' hud-warning-wrap--visible' : ''}`}
+          className={`hud-warning-wrap${showWarning ? ' hud-warning-wrap--visible' : ''}`}
           role="status"
           aria-live="polite"
         >
           {/* Text exists only when the rule fired this week, so nothing stale can be read. */}
-          {explanation?.flagged && (
+          {showWarning && (
             <div className="hud-warning" title={explanation.rule}>
               <TriangleAlert size={16} />
               <span>{explanation.headline}</span>

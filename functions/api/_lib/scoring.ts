@@ -66,6 +66,21 @@ export function computeHealthScore(w: WeekSignals, sources?: WeekSources): numbe
   return Math.round(clamp(composite, 0, 100))
 }
 
+// Mirror of computeDataCoverage in src/logic/healthScore.js (test-coverage.mjs checks parity).
+export const MIN_COVERAGE = 0.4
+
+export function computeDataCoverage(sources?: WeekSources): number {
+  if (!sources) return 1
+  const parts: [number, SourceState | undefined][] = [
+    [WEIGHTS.cycleTime, sources.jira],
+    [WEIGHTS.completion, sources.jira],
+    [WEIGHTS.reviewTurnaround, sources.github],
+    [WEIGHTS.afterHoursCommits, sources.github],
+    [WEIGHTS.meetingLoad, sources.calendar],
+  ]
+  return Math.round(parts.reduce((s, [w, src]) => s + (included(src) ? w : 0), 0) * 100) / 100
+}
+
 export function computeCapabilityScore(w: WeekSignals): number {
   const composite =
     normalizeCycleTime(w.jira.avgCycleTimeDays) * 0.3 +
