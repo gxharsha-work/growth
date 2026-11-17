@@ -144,6 +144,10 @@
   --level: var(--bad);
 }
 
+.details-popup-status--none {
+  --level: #5b6472;
+}
+
 .details-popup-meter {
   height: 6px;
   margin-bottom: 3px;

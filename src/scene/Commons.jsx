@@ -28,6 +28,7 @@ export default function Commons({ weekHealth, interactive = true, showLabel = tr
   const flashBlocked = useVillageStore((s) => s.flashBlocked)
 
   const active = interactive && (selectedId === COMMONS_ID || highlightedId === COMMONS_ID)
+  const noGardenData = !!weekHealth && weekHealth.gardenScore == null
   const vibrancy = weekHealth?.gardenScore ?? 75
 
   useFrame(({ clock }) => {
@@ -74,7 +75,8 @@ export default function Commons({ weekHealth, interactive = true, showLabel = tr
         <meshToonMaterial color={STONE} gradientMap={gradientMap} />
       </mesh>
 
-      <KnowledgeGarden vibrancy={vibrancy} position={[0, 0.1, 0]} scale={1.75} />
+      {/* No GitHub data: faded (ghost) garden, never placeholder-driven colours. */}
+      <KnowledgeGarden vibrancy={vibrancy} ghost={noGardenData} position={[0, 0.1, 0]} scale={1.75} />
 
       {[0, 1, 2, 3].map((k) => {
         const a = Math.PI / 4 + (k * Math.PI) / 2

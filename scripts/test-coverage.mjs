@@ -76,4 +76,30 @@ await suite.test('UI: "Not enough data" text and live regions are present', asyn
   assert((hud.match(/aria-live="polite"/g) ?? []).length >= 3 && note.includes('aria-live="polite"'), 'missing aria-live')
   assert(hud.includes('aria-label={`Team health score'), 'missing spoken score label')
 })
+// ---- FR13: the garden never shows GitHub placeholder data ----
+const village = await bundle(`
+  export { useSignalsStore } from './src/store/signalsStore'
+  export { getTeamWeeklyHealth } from './src/logic/teamHealth'
+  export { getCommonsStatus } from './src/logic/buildingStatus'
+`, 'js')
+const wk = (github) => ({
+  week: 1, jira: { issueCount: 20, avgCycleTimeDays: 3, sprintCompletionPct: 80 },
+  github: { prCount: 0, avgReviewTurnaroundHours: 12, pctCommitsAfter7pm: 15 }, calendar: { avgMeetingHoursPerWeek: 6 },
+  sources: { jira: 'live', github, calendar: 'live' },
+})
+village.useSignalsStore.setState({ weeklyByTeam: { nogh: [wk('placeholder')], demo: [wk('demo')], gh: [wk('live')] } })
+await suite.test('garden: team without GitHub gets no garden score and a "no live data" status', async () => {
+  const row = village.getTeamWeeklyHealth('nogh')[0]
+  const st = village.getCommonsStatus(row)
+  assert(row.gardenScore === null && st.level === 'none' && /no live data/.test(st.headline), JSON.stringify(st))
+  return st.headline
+})
+await suite.test('garden: demo and live GitHub teams keep their garden score', async () => {
+  for (const id of ['demo', 'gh']) { const row = village.getTeamWeeklyHealth(id)[0]; assert(Number.isFinite(row.gardenScore), `${id}: ${row.gardenScore}`) }
+})
+await suite.test('garden renders faded (ghost) when there is no GitHub data', async () => {
+  const src = fs.readFileSync(`${ROOT}src/scene/Commons.jsx`, 'utf8')
+  assert(/ghost=\{noGardenData\}/.test(src), 'Commons does not pass ghost')
+})
+
 suite.done()

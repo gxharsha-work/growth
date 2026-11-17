@@ -25,7 +25,7 @@ const cache = new Map()
  *     earlyWarning,       // bool (FR9)
  *     capabilityScore,    // 0-100, drives Capability Building
  *     capabilityTrend,    // delta vs previous week (+improving / -declining)
- *     gardenScore,        // 0-100, drives Knowledge Garden
+ *     gardenScore,        // 0-100, drives Knowledge Garden; null = no GitHub data
  *     weather,            // 'sunny' | 'partly-cloudy' | 'rain'
  *   }
  */
@@ -57,7 +57,9 @@ export function getTeamWeeklyHealth(teamId) {
       capabilityScore: capabilityScores[i],
       capabilityTrend:
         i === 0 ? 0 : capabilityScores[i] - capabilityScores[i - 1],
-      gardenScore: computeGardenScore(signals),
+      // The garden listens only to GitHub review turnaround. Without a counted
+      // GitHub source it has no data of its own: null, never placeholder numbers.
+      gardenScore: ['live', 'demo'].includes(signals.sources?.github ?? 'demo') ? computeGardenScore(signals) : null,
       weather: computeWeatherState(scores[i], signals, earlyWarning),
     }
   })

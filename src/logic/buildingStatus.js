@@ -36,6 +36,14 @@ export function getCapabilityStatus(weekHealth) {
 export function getCommonsStatus(weekHealth) {
   if (!weekHealth) return null
   const { gardenScore, signals } = weekHealth
+  if (gardenScore == null) {
+    return {
+      score: 0,
+      level: 'none',
+      headline: 'Knowledge flow · no live data',
+      detail: 'The garden is driven by GitHub review speed. This team has no GitHub connection yet, so the garden is shown faded.',
+    }
+  }
   const hours = signals.github.avgReviewTurnaroundHours
   const condition = gardenScore >= 70 ? 'flowing' : gardenScore >= 40 ? 'slowing' : 'bottlenecked'
   return {
