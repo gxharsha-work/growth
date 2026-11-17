@@ -23,6 +23,9 @@ export function levelFor(score) {
 export function getCapabilityStatus(weekHealth) {
   if (!weekHealth) return null
   const { capabilityScore, capabilityTrend, signals } = weekHealth
+  if (capabilityScore == null) {
+    return { score: 0, level: 'none', headline: 'Shipping health · no live data', detail: 'No Jira or GitHub data for this period.' }
+  }
   const { avgCycleTimeDays, sprintCompletionPct } = signals.jira
   return {
     score: capabilityScore,

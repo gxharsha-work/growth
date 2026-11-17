@@ -40,7 +40,7 @@ export function getTeamWeeklyHealth(teamId) {
   if (weeks.length === 0) return []
 
   const scores = weeks.map((w) => computeHealthScore(w, w.sources))
-  const capabilityScores = weeks.map(computeCapabilityScore)
+  const capabilityScores = weeks.map((w) => computeCapabilityScore(w, w.sources))
 
   const rows = weeks.map((signals, i) => {
     const earlyWarning = isEarlyWarning(scores, i)
@@ -56,7 +56,9 @@ export function getTeamWeeklyHealth(teamId) {
       enoughData: coverage >= MIN_COVERAGE, // false -> UI shows "Not enough data"
       capabilityScore: capabilityScores[i],
       capabilityTrend:
-        i === 0 ? 0 : capabilityScores[i] - capabilityScores[i - 1],
+        i === 0 || capabilityScores[i] == null || capabilityScores[i - 1] == null
+          ? 0
+          : capabilityScores[i] - capabilityScores[i - 1],
       // The garden listens only to GitHub review turnaround. Without a counted
       // GitHub source it has no data of its own: null, never placeholder numbers.
       gardenScore: ['live', 'demo'].includes(signals.sources?.github ?? 'demo') ? computeGardenScore(signals) : null,

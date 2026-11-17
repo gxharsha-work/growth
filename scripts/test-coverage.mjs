@@ -13,8 +13,8 @@ const bundle = async (contents, loader) => {
   const out = await build({ stdin: { contents, resolveDir: ROOT, loader }, bundle: true, write: false, format: 'esm', platform: 'node', logLevel: 'silent' })
   return import(`data:text/javascript;base64,${Buffer.from(out.outputFiles[0].text).toString('base64')}`)
 }
-const client = await bundle(`export { computeDataCoverage, MIN_COVERAGE, computeHealthScore } from './src/logic/healthScore'`, 'js')
-const server = await bundle(`export { computeDataCoverage, MIN_COVERAGE, computeHealthScore } from './functions/api/_lib/scoring'`, 'ts')
+const client = await bundle(`export { computeDataCoverage, MIN_COVERAGE, computeHealthScore, computeCapabilityScore } from './src/logic/healthScore'`, 'js')
+const server = await bundle(`export { computeDataCoverage, MIN_COVERAGE, computeHealthScore, computeCapabilityScore } from './functions/api/_lib/scoring'`, 'ts')
 
 const STATES = ['live', 'demo', 'placeholder', undefined]
 const suite = makeSuite('Data coverage and "Not enough data" (40% rule)')
@@ -46,6 +46,24 @@ await suite.test('the score itself is unchanged by this rule', async () => {
     const s = { jira, github: 'placeholder', calendar }
     assert(client.computeHealthScore(w, s) === server.computeHealthScore(w, s), JSON.stringify(s))
   }
+})
+
+// ---- FR13: building colour (capability score) ignores placeholder GitHub numbers ----
+await suite.test('capability score: client and server agree for every source combination', async () => {
+  const w = { jira: { avgCycleTimeDays: 3, sprintCompletionPct: 70 }, github: { avgReviewTurnaroundHours: 12, pctCommitsAfter7pm: 15 }, calendar: { avgMeetingHoursPerWeek: 8 } }
+  for (const jira of STATES) for (const github of STATES) {
+    const s = { jira, github, calendar: 'live' }
+    assert(client.computeCapabilityScore(w, s) === server.computeCapabilityScore(w, s), JSON.stringify(s))
+  }
+})
+await suite.test('capability score: placeholder GitHub values have no effect; no counted signal gives null', async () => {
+  const base = { jira: { avgCycleTimeDays: 3, sprintCompletionPct: 70 }, calendar: { avgMeetingHoursPerWeek: 8 } }
+  const s = { jira: 'live', github: 'placeholder', calendar: 'live' }
+  const a = client.computeCapabilityScore({ ...base, github: { avgReviewTurnaroundHours: 1, pctCommitsAfter7pm: 0 } }, s)
+  const b = client.computeCapabilityScore({ ...base, github: { avgReviewTurnaroundHours: 90, pctCommitsAfter7pm: 90 } }, s)
+  assert(a === b, `${a} vs ${b}`)
+  assert(client.computeCapabilityScore({ ...base, github: { avgReviewTurnaroundHours: 1, pctCommitsAfter7pm: 0 } }, { jira: 'placeholder', github: 'placeholder' }) === null, 'not null')
+  return `score ${a} either way`
 })
 
 // End to end through the API: a live team whose third week is an empty sprint.

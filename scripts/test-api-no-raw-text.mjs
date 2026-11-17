@@ -8,7 +8,9 @@
 //
 // Run: node --no-warnings scripts/test-api-no-raw-text.mjs
 
-import { app, devEnv, call, addLiveTeam, makeSuite, assert } from './lib/api-harness.mjs'
+import fs from 'node:fs'
+import path from 'node:path'
+import { ROOT, app, devEnv, call, addLiveTeam, makeSuite, assert } from './lib/api-harness.mjs'
 
 const TICKET = 'SENTINEL-TICKET-TITLE-7f3a'
 const EVENT = 'SENTINEL-EVENT-TITLE-9c1e'
@@ -47,5 +49,12 @@ for (const week of [1, 4]) {
 await suite.test('at least the signals route was exercised', async () => {
   assert(getRoutes.includes('/api/teams/leaky/signals'), `routes: ${getRoutes.join(', ')}`)
   return `${getRoutes.length} GET routes`
+})
+await suite.test('no migration seeds ticket summaries or event titles', async () => {
+  const dir = path.join(ROOT, 'migrations')
+  for (const f of fs.readdirSync(dir)) {
+    const sql = fs.readFileSync(path.join(dir, f), 'utf8')
+    assert(!/"summary"\s*:|"title"\s*:/.test(sql), `${f} contains raw text fields`)
+  }
 })
 suite.done()

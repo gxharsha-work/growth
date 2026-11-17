@@ -128,21 +128,21 @@ export function computeDataCoverage(sources) {
 
 // Jira + GitHub only (no calendar) — how well the team is actually shipping.
 // Drives the Capability Building's level/condition.
-export function computeCapabilityScore(weekSignals) {
+export function computeCapabilityScore(weekSignals, sources) {
   const { jira, github } = weekSignals
-  const cycleScore = normalizeCycleTime(jira.avgCycleTimeDays)
-  const completionScore = normalizeCompletion(jira.sprintCompletionPct)
-  const reviewScore = normalizeReviewTurnaround(
-    github.avgReviewTurnaroundHours
-  )
-  const afterHoursScore = normalizeAfterHoursCommits(
-    github.pctCommitsAfter7pm
-  )
-  const composite =
-    cycleScore * 0.3 +
-    completionScore * 0.3 +
-    reviewScore * 0.25 +
-    afterHoursScore * 0.15
+  // Same provenance rule as computeHealthScore: a placeholder source drops
+  // out and the remaining weights rescale. Omitting `sources` counts all
+  // four terms (the original math). null = no counted signal at all.
+  const terms = [
+    { norm: normalizeCycleTime(jira.avgCycleTimeDays), weight: 0.3, src: sources?.jira },
+    { norm: normalizeCompletion(jira.sprintCompletionPct), weight: 0.3, src: sources?.jira },
+    { norm: normalizeReviewTurnaround(github.avgReviewTurnaroundHours), weight: 0.25, src: sources?.github },
+    { norm: normalizeAfterHoursCommits(github.pctCommitsAfter7pm), weight: 0.15, src: sources?.github },
+  ]
+  const active = sources ? terms.filter((t) => sourceIncluded(t.src)) : terms
+  const totalWeight = active.reduce((s, t) => s + t.weight, 0)
+  if (totalWeight === 0) return null
+  const composite = active.reduce((s, t) => s + t.norm * t.weight, 0) / totalWeight
   return Math.round(clamp(composite, 0, 100))
 }
 

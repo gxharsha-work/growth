@@ -81,12 +81,18 @@ export function computeDataCoverage(sources?: WeekSources): number {
   return Math.round(parts.reduce((s, [w, src]) => s + (included(src) ? w : 0), 0) * 100) / 100
 }
 
-export function computeCapabilityScore(w: WeekSignals): number {
-  const composite =
-    normalizeCycleTime(w.jira.avgCycleTimeDays) * 0.3 +
-    normalizeCompletion(w.jira.sprintCompletionPct) * 0.3 +
-    normalizeReviewTurnaround(w.github.avgReviewTurnaroundHours) * 0.25 +
-    normalizeAfterHoursCommits(w.github.pctCommitsAfter7pm) * 0.15
+// Mirror of computeCapabilityScore in src/logic/healthScore.js (parity-tested).
+export function computeCapabilityScore(w: WeekSignals, sources?: WeekSources): number | null {
+  const terms = [
+    { norm: normalizeCycleTime(w.jira.avgCycleTimeDays), weight: 0.3, src: sources?.jira },
+    { norm: normalizeCompletion(w.jira.sprintCompletionPct), weight: 0.3, src: sources?.jira },
+    { norm: normalizeReviewTurnaround(w.github.avgReviewTurnaroundHours), weight: 0.25, src: sources?.github },
+    { norm: normalizeAfterHoursCommits(w.github.pctCommitsAfter7pm), weight: 0.15, src: sources?.github },
+  ]
+  const active = sources ? terms.filter((t) => included(t.src)) : terms
+  const totalWeight = active.reduce((s, t) => s + t.weight, 0)
+  if (totalWeight === 0) return null
+  const composite = active.reduce((s, t) => s + t.norm * t.weight, 0) / totalWeight
   return Math.round(clamp(composite, 0, 100))
 }
 
