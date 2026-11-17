@@ -84,6 +84,16 @@ const MAX_NAME = 80
 const MAX_SHORT = 60
 const MAX_NOTES = 2000
 
+// Security headers on every API response. Team data must never be cached
+// by a browser or proxy (Cache-Control: no-store).
+app.use('*', async (c, next) => {
+  await next()
+  c.header('Cache-Control', 'no-store')
+  c.header('X-Content-Type-Options', 'nosniff')
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin')
+  c.header('X-Frame-Options', 'DENY')
+})
+
 // Every failure is a JSON body, never an HTML page or a stack trace.
 app.onError((err, c) => {
   if (err instanceof SyntaxError) return c.json({ error: 'invalid JSON body' }, 400)

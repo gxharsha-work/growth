@@ -2,7 +2,8 @@
 //
 // Run: node --no-warnings scripts/test-health.mjs
 
-import { devEnv, prodEnv, call, makeSuite, assert } from './lib/api-harness.mjs'
+import fs from 'node:fs'
+import { ROOT, devEnv, prodEnv, call, makeSuite, assert } from './lib/api-harness.mjs'
 
 const suite = makeSuite('Health endpoint')
 const HOUR = 3_600_000
@@ -40,5 +41,16 @@ await suite.test('no build.json available: build sha "unknown", still answers', 
 })
 await suite.test('production: anonymous health check is refused (401)', async () => {
   const { env } = prodEnv(); assert((await call(env, 'GET', '/api/health')).status === 401, 'not 401')
+})
+// ---- security headers ----
+await suite.test('every API response, including 401 and 400, is no-store and nosniff', async () => {
+  const { env } = prodEnv(); const { env: dev } = devEnv()
+  for (const r of [await call(env, 'GET', '/api/teams'), await call(dev, 'GET', '/api/teams'), await call(dev, 'POST', '/api/insight', { body: '{bad' })]) {
+    assert(r.headers.get('cache-control') === 'no-store' && r.headers.get('x-content-type-options') === 'nosniff' && r.headers.get('x-frame-options') === 'DENY', `HTTP ${r.status}`)
+  }
+})
+await suite.test('static assets: _headers sets CSP, HSTS, nosniff, Referrer-Policy and frame-ancestors none', async () => {
+  const h = fs.readFileSync(`${ROOT}public/_headers`, 'utf8')
+  for (const k of ['Content-Security-Policy:', "default-src 'self'", "frame-ancestors 'none'", "object-src 'none'", 'Strict-Transport-Security: max-age=31536000', 'X-Content-Type-Options: nosniff', 'Referrer-Policy:']) assert(h.includes(k), k)
 })
 suite.done()
