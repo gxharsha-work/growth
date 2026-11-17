@@ -35,3 +35,9 @@ JIRA_SITE_URL = "https://growth3d.atlassian.net"
 JIRA_EMAIL = "harshavg@andrew.cmu.edu"
 JIRA_BOARD_ID = "1"
 GOOGLE_CALENDAR_CLIENT_ID = "107182987367-2qe673pnt7ugu0imv4fau28ieckc2hbv.apps.googleusercontent.com"
+
+# Workers Logs: keep each cron run's log lines (written / failed per source)
+# searchable in the dashboard, so a failed ingestion is visible without tailing.
+[observability]
+enabled = true
+head_sampling_rate = 1
