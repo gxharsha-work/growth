@@ -10,6 +10,8 @@ import { useSignalsStore } from '../store/signalsStore'
 // The server enforces the rule: live data is withheld until 3 members opt in.
 export default function RosterCard({ teamId }) {
   const canEdit = useAuthStore((s) => s.role) === 'manager'
+  const isAdmin = useAuthStore((s) => s.isAdmin)
+  const [refreshing, setRefreshing] = useState(false)
   const reloadSignals = useSignalsStore((s) => s.reloadSignals)
   const [roster, setRoster] = useState(null) // { members, consent } | 'offline' | 'error'
   const [open, setOpen] = useState(false)
@@ -54,6 +56,21 @@ export default function RosterCard({ teamId }) {
       await applyChange(await api.get(`/teams/${teamId}/roster`))
     } catch {
       setMessage('Could not save that change. Please try again.')
+    }
+  }
+
+  // Admin: re-run ingestion now so consent changes reach the GitHub numbers today.
+  async function refreshData() {
+    setMessage('')
+    setRefreshing(true)
+    try {
+      await api.post('/admin/refresh', {})
+      await reloadSignals(teamId)
+      setMessage('Data refreshed from Jira, calendar and GitHub.')
+    } catch {
+      setMessage('Could not refresh the data right now. The daily refresh runs at 13:00 UTC.')
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -124,6 +141,14 @@ export default function RosterCard({ teamId }) {
                 onChange={(e) => e.target.files?.[0] && importFile(e.target.files[0])}
               />
               <p className="hud-roster-hint">Columns: name, role, team, consented (yes or no).</p>
+            </>
+          )}
+          {isAdmin && (
+            <>
+              <button className="hud-roster-import" onClick={refreshData} disabled={refreshing}>
+                {refreshing ? 'Refreshing' : 'Refresh data now'}
+              </button>
+              <p className="hud-roster-hint">GitHub counts only opted-in members. Data also refreshes daily.</p>
             </>
           )}
         </>

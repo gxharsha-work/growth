@@ -18,7 +18,7 @@ import { checkCoachingRateLimit } from './ratelimit'
 import { MIN_COVERAGE } from './scoring'
 import { getRoster, summarizeConsent, parseRosterCsv } from './roster'
 
-type Env = AuthEnv & { AI: Ai; AI_TIMEOUT_MS?: string; ASSETS?: Fetcher }
+type Env = AuthEnv & { AI: Ai; AI_TIMEOUT_MS?: string; ASSETS?: Fetcher; INGEST?: Fetcher }
 type Vars = { user: AuthedUser }
 
 type TeamRow = {
@@ -321,6 +321,18 @@ app.get('/teams/:id/signals', async (c) => {
     calendar: { avgMeetingHoursPerWeek: w.calendar.avgMeetingHoursPerWeek },
   }))
   return c.json({ weeks: aggregated, source, consent })
+})
+
+// ---------- admin: run ingestion now ----------
+// Runs the ingestion Worker through its service binding (it has no public
+// URL), so recorded consent shows up in GitHub data without waiting for the
+// daily cron. Returns the Worker's log: counts only, no names or titles.
+app.post('/admin/refresh', async (c) => {
+  if (!c.get('user').isAdmin) return c.json(ADMIN_ONLY, 403)
+  if (!c.env.INGEST) return c.json({ error: 'ingestion binding not configured' }, 503)
+  const res = await c.env.INGEST.fetch(new Request('https://growth-ingestion/run'))
+  const text = await res.text()
+  return c.json({ ok: res.ok, log: text.split('\n').filter(Boolean) }, res.ok ? 200 : 502)
 })
 
 // ---------- beta feedback ----------

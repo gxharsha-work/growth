@@ -35,6 +35,7 @@ const UNIT = [
   'scripts/test-health.mjs',
   'scripts/test-feedback.mjs',
   'scripts/test-hud-render.mjs',
+  'scripts/test-github.mjs',
 ]
 for (const file of UNIT) {
   const r = run('node', ['--no-warnings', file])

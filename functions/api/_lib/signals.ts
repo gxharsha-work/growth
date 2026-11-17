@@ -161,7 +161,7 @@ function isoWeekThursdayMs(isoWeek: string): number {
 
 type SprintRow = { sprint: SprintMeta; jira: JiraSignal }
 type CalRow = { isoWeek: string; calendar: CalendarSignal }
-type AlignedRow = { week: number; period: Period; jira: JiraSignal; calendar: CalendarSignal | null; hasCalendar: boolean }
+type AlignedRow = { week: number; sprintId: number; period: Period; jira: JiraSignal; calendar: CalendarSignal | null; hasCalendar: boolean }
 
 function buildSprintRows(jiraRows: SprintRow[], calendarRows: CalRow[]): AlignedRow[] {
   const startMs = (s: SprintMeta) => {
@@ -193,6 +193,7 @@ function buildSprintRows(jiraRows: SprintRow[], calendarRows: CalRow[]): Aligned
         : null
       return {
         week: i + 1,
+        sprintId: row.sprint.id,
         period: {
           kind: 'sprint',
           name: row.sprint.name,
@@ -229,10 +230,26 @@ const validCalendar = (c: any): c is CalendarSignal => !!c && isFinite_(c.avgMee
 // A sprint with no issues has no cycle time: 0 days would otherwise score as perfect.
 const jiraState = (j: JiraSignal): SourceState => (j.issueCount > 0 ? 'live' : 'placeholder')
 
+// Ingested GitHub rows (worker-ingestion/src/github.ts) carry the sprint they
+// belong to; only the three team-level numbers ever leave this function.
+type GithubRow = GithubSignal & { sprint?: SprintMeta }
+const validGithub = (g: any): g is GithubRow =>
+  !!g && isFinite_(g.prCount) && isFinite_(g.avgReviewTurnaroundHours) && isFinite_(g.pctCommitsAfter7pm)
+const githubNumbers = (g: GithubRow): GithubSignal => ({
+  prCount: g.prCount,
+  avgReviewTurnaroundHours: g.avgReviewTurnaroundHours,
+  pctCommitsAfter7pm: g.pctCommitsAfter7pm,
+})
+
 function mergeIngestedRows(rows: Row[]): WeekSignals[] {
   const jiraByWeek = new Map<string, JiraSignal>()
   const calendarByWeek = new Map<string, CalendarSignal>()
+  const githubByWeek = new Map<string, GithubRow>()
   for (const r of rows) {
+    if (r.source === 'github') {
+      const g = parseRow<GithubRow>(r)
+      if (validGithub(g)) githubByWeek.set(r.iso_week, g)
+    }
     if (r.source === 'jira') {
       const j = parseRow<JiraSignal>(r)
       if (validJira(j)) jiraByWeek.set(r.iso_week, j)
@@ -255,33 +272,39 @@ function mergeIngestedRows(rows: Row[]): WeekSignals[] {
       return { sprint: sprint!, jira }
     })
     const calendarRows: CalRow[] = [...calendarByWeek.entries()].map(([isoWeek, calendar]) => ({ isoWeek, calendar }))
-    return buildSprintRows(jiraRows, calendarRows).map((r) => ({
+    const githubBySprint = new Map<number, GithubRow>()
+    for (const g of githubByWeek.values()) if (g.sprint) githubBySprint.set(g.sprint.id, g)
+    return buildSprintRows(jiraRows, calendarRows).map((r) => {
+      const gh = githubBySprint.get(r.sprintId)
+      return {
       week: r.week,
       period: r.period,
       jira: r.jira,
-      github: PENDING_GITHUB,
+      github: gh ? githubNumbers(gh) : PENDING_GITHUB,
       calendar: r.calendar ?? PENDING_CALENDAR,
       sources: {
         jira: jiraState(r.jira),
-        github: 'placeholder',
+        github: gh ? 'live' : 'placeholder',
         calendar: r.hasCalendar ? 'live' : 'placeholder',
       } as WeekSources,
-    }))
+    }
+    })
   }
 
   return [...jiraByWeek.keys()]
     .sort()
     .map((isoWeek, i) => {
       const hasCalendar = calendarByWeek.has(isoWeek)
+      const gh = githubByWeek.get(isoWeek)
       return {
         week: i + 1,
         period: { kind: 'week', isoWeek } as Period,
         jira: jiraByWeek.get(isoWeek)!,
-        github: PENDING_GITHUB, // GitHub isn't connected yet — a placeholder
+        github: gh ? githubNumbers(gh) : PENDING_GITHUB, // placeholder when no GitHub row
         calendar: calendarByWeek.get(isoWeek) ?? PENDING_CALENDAR,
         sources: {
           jira: jiraState(jiraByWeek.get(isoWeek)!),
-          github: 'placeholder',
+          github: gh ? 'live' : 'placeholder',
           calendar: hasCalendar ? 'live' : 'placeholder',
         } as WeekSources,
       }
