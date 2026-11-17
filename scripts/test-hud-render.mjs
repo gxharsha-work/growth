@@ -15,14 +15,15 @@ import { ROOT, makeSuite, assert } from './lib/api-harness.mjs'
 // zustand v5 renders from each store's INITIAL state on the server, so each
 // case is its own bundle whose app and signals stores start on the chosen
 // team and week (a text substitution in those two files, test-only).
-async function renderCase(teamId, week, { loaded = true, error = false } = {}) {
+async function renderCase(teamId, week, { loaded = true, error = false, role = 'manager', isAdmin = true } = {}) {
   const initial = {
     name: 'test-initial-state',
     setup(b) {
-      b.onLoad({ filter: /src[\\/]store[\\/](appStore|signalsStore)\.js$/ }, async (args) => {
+      b.onLoad({ filter: /src[\\/]store[\\/](appStore|signalsStore|authStore)\.js$/ }, async (args) => {
         let code = fs.readFileSync(args.path, 'utf8')
         code = code.replace('currentTeam: firstTeamId(),', `currentTeam: ${JSON.stringify(teamId)},`).replace('currentWeek: 0,', `currentWeek: ${week},`)
         if (loaded) code = code.replace('weeklyByTeam: {},', `weeklyByTeam: { [${JSON.stringify(teamId)}]: getWeeklySignalsForTeam(${JSON.stringify(teamId)}) },`)
+        code = code.replace("role: 'manager',\n  isAdmin: true,", `role: ${JSON.stringify(role)},\n  isAdmin: ${isAdmin},`)
         if (error) code = code.replace('errorByTeam: {},', `errorByTeam: { [${JSON.stringify(teamId)}]: true },`)
         code = code.replace('sourceByTeam: {},', `sourceByTeam: { [${JSON.stringify(teamId)}]: 'hand-tuned' },`)
         return { contents: code, loader: 'jsx' }
@@ -47,7 +48,7 @@ async function renderCase(teamId, week, { loaded = true, error = false } = {}) {
   // the repo to resolve them: node_modules/.cache is git-ignored.
   const dir = path.join(ROOT, 'node_modules', '.cache', 'growth-test')
   fs.mkdirSync(dir, { recursive: true })
-  const file = path.join(dir, `hud-${teamId}-${week}-${loaded}-${error}.mjs`)
+  const file = path.join(dir, `hud-${teamId}-${week}-${loaded}-${error}-${role}-${isAdmin}.mjs`)
   fs.writeFileSync(file, out.outputFiles[0].text)
   return (await import(pathToFileURL(file).href)).html
 }
@@ -87,6 +88,20 @@ await suite.test('data still loading: a "Loading team data" status, not a blank 
 await suite.test('data failed to load: a plain-language alert, no raw error text', async () => {
   const html = await renderCase('platform', 0, { loaded: false, error: true })
   assert(html.includes('could not be loaded') && html.includes('role="alert"') && !html.includes('Loading team data'), 'no error state')
+})
+// ---- IT-01: controls follow the role ----
+const controls = (html) => ({ del: /aria-label="Delete /.test(html), rename: /aria-label="Rename /.test(html), edit: /hud-team-edit/.test(html), create: /New team/.test(html) })
+await suite.test('admin sees rename and delete', async () => {
+  const c = controls(await renderCase('platform', 0, { role: 'manager', isAdmin: true }))
+  assert(c.del && c.rename, JSON.stringify(c))
+})
+await suite.test('team lead (manager, not admin) sees no delete and no rename, only cohort editing', async () => {
+  const c = controls(await renderCase('platform', 0, { role: 'manager', isAdmin: false }))
+  assert(!c.del && !c.rename && c.edit, JSON.stringify(c))
+})
+await suite.test('leadership (read-only) sees no edit, delete or create controls', async () => {
+  const c = controls(await renderCase('platform', 0, { role: 'leadership', isAdmin: false }))
+  assert(!c.del && !c.rename && !c.edit && !c.create, JSON.stringify(c))
 })
 await suite.test('coaching errors never show raw server text', async () => {
   const src = fs.readFileSync(`${ROOT}src/ui/CoachingNote.jsx`, 'utf8')
