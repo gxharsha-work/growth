@@ -20,3 +20,13 @@ database_id = "ce889c2f-cd60-4182-83a2-7bac95d5289c"
 # in functions/api/_lib/app.ts's POST /api/insight. See EVALUATION.md.
 [ai]
 binding = "AI"
+
+# Production settings, shared by preview deployments so previews behave exactly
+# like production (both sit behind the same Cloudflare Access application).
+# ACCESS_AUD is the Access application's audience tag: an identifier, not a secret.
+# ADMIN_EMAILS is a Pages secret (wrangler pages secret put ADMIN_EMAILS), not listed here.
+[vars]
+ENVIRONMENT = "production"
+ACCESS_TEAM_DOMAIN = "growth-cmu.cloudflareaccess.com"
+ACCESS_AUD = "321a532af9058100b48c0ce4b752a474ac7522a3c9c542393cbdb2b4676b1940"
+AI_TIMEOUT_MS = "8000"
