@@ -3,34 +3,45 @@
   flex-direction: column;
 }
 
-.coaching-note-trigger {
+/* ---- the coach: a sprout avatar that "speaks" the note in a bubble ---- */
+
+.coach-speech {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-radius: 14px;
-  color: var(--ink);
-  font-size: 12.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.15s ease;
+  align-items: flex-start;
+  gap: 9px;
 }
 
-.coaching-note-trigger:hover {
-  transform: translateY(-1px);
-}
-
-.coaching-note-trigger svg {
-  color: var(--accent);
+.coach-avatar {
   flex: none;
+  margin-top: 1px;
+  filter: drop-shadow(0 5px 9px rgba(47, 158, 99, 0.28));
+  animation: coach-pop 0.36s cubic-bezier(0.2, 0.9, 0.3, 1.5);
+  transform-origin: 50% 90%;
 }
 
-.coaching-note-trigger--warning svg {
-  color: var(--bad);
+/* gentle idle bob on the body group only, so it layers over the pop-in */
+.coach-avatar-body {
+  animation: coach-bob 3.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 50% 90%;
 }
 
-.coaching-note-card {
+.coach-avatar-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: coach-blink 4.6s infinite;
+}
+
+.coach-avatar--thinking .coach-avatar-sprout {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: coach-wiggle 1.3s ease-in-out infinite;
+}
+
+.coach-bubble {
+  position: relative;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -39,12 +50,93 @@
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--ink-2);
-  /* safety net: even a structured 3-line note that runs long (long team/
-     peer names, a verbose model output) scrolls within its own box instead
-     of pushing the rest of the HUD off screen */
-  max-height: 220px;
+  /* safety net: a long note scrolls within the bubble instead of pushing the
+     rest of the HUD off screen */
+  max-height: 240px;
   overflow-y: auto;
+  animation: coach-bubble-in 0.3s cubic-bezier(0.2, 0.8, 0.3, 1.1);
 }
+
+/* little tail joining the bubble back to the avatar's mouth */
+.coach-bubble::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 16px;
+  width: 11px;
+  height: 11px;
+  background: var(--glass);
+  border-left: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+  border-bottom-left-radius: 3px;
+  transform: rotate(45deg);
+}
+
+/* idle state: the bubble doubles as the "ask me" button */
+.coach-bubble--trigger {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: transform 0.15s ease;
+}
+
+.coach-bubble--trigger:hover {
+  transform: translateY(-1px);
+}
+
+.coach-bubble--trigger svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.coach-bubble--warning svg {
+  color: var(--bad);
+}
+
+.coach-bubble--loading {
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.coach-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.coach-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--good);
+  animation: coach-dot 1.1s ease-in-out infinite;
+}
+
+.coach-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.coach-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.coach-bubble--error {
+  color: var(--bad);
+}
+
+.coach-bubble-retry {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+/* ---- shared bits reused inside the bubble ---- */
 
 .coaching-note-head {
   display: flex;
@@ -61,7 +153,11 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--good);
+}
+
+.coaching-note-label svg {
+  color: var(--good);
 }
 
 .coaching-note-reset {
@@ -101,23 +197,80 @@
   color: var(--ink-3);
 }
 
-.coaching-note-card--loading {
-  flex-direction: row;
-  align-items: center;
-  color: var(--ink-3);
-  font-weight: 600;
-}
+/* ---- animations ---- */
 
-.coaching-note-spin {
-  animation: coaching-note-spin 1.4s linear infinite;
-}
-
-@keyframes coaching-note-spin {
-  to {
-    transform: rotate(360deg);
+@keyframes coach-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
   }
 }
 
-.coaching-note-card--error {
-  color: var(--bad);
+@keyframes coach-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes coach-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.6px);
+  }
+}
+
+@keyframes coach-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes coach-wiggle {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes coach-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-avatar,
+  .coach-avatar-body,
+  .coach-avatar-eyes,
+  .coach-avatar--thinking .coach-avatar-sprout,
+  .coach-bubble,
+  .coach-dots i {
+    animation: none;
+  }
 }

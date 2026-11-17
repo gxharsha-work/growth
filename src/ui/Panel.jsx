@@ -5,6 +5,7 @@ import { COMMONS_ID, countArchetypes, useVillageStore } from '../store/villageSt
 import { useAppStore } from '../store/appStore'
 import { useTeamsStore } from '../store/teamsStore'
 import { useSignalsStore } from '../store/signalsStore'
+import { useAuthStore } from '../store/authStore'
 import { getTeamWeek } from '../logic/teamHealth'
 import { getCapabilityStatus, getCommonsStatus } from '../logic/buildingStatus'
 import ArchetypeGlyph from './ArchetypeGlyph'
@@ -26,6 +27,7 @@ export default function Panel() {
   const removeBuilding = useVillageStore((s) => s.removeBuilding)
   const selectBuilding = useVillageStore((s) => s.selectBuilding)
   const setHighlightedId = useVillageStore((s) => s.setHighlightedId)
+  const readOnly = useAuthStore((s) => s.role) !== 'manager' // leadership can view but not edit
 
   const [composerOpen, setComposerOpen] = useState(false)
   const [name, setName] = useState('')
@@ -131,18 +133,20 @@ export default function Panel() {
           Capabilities
           <span className="panel-count">{list.length}</span>
         </span>
-        <button
-          className={`panel-add${composerOpen ? ' panel-add--open' : ''}`}
-          onClick={toggleComposer}
-          aria-expanded={composerOpen}
-          aria-label={composerOpen ? 'Close new capability' : 'Add a capability'}
-        >
-          <Plus size={15} strokeWidth={2.4} />
-          <span>{composerOpen ? 'Close' : 'Add'}</span>
-        </button>
+        {!readOnly && (
+          <button
+            className={`panel-add${composerOpen ? ' panel-add--open' : ''}`}
+            onClick={toggleComposer}
+            aria-expanded={composerOpen}
+            aria-label={composerOpen ? 'Close new capability' : 'Add a capability'}
+          >
+            <Plus size={15} strokeWidth={2.4} />
+            <span>{composerOpen ? 'Close' : 'Add'}</span>
+          </button>
+        )}
       </div>
 
-      <div className={`panel-composer-wrap${composerOpen ? ' panel-composer-wrap--open' : ''}`}>
+      <div className={`panel-composer-wrap${composerOpen && !readOnly ? ' panel-composer-wrap--open' : ''}`}>
         <div className="panel-composer" style={{ '--accent-shape': ARCHETYPES[archetype].color }}>
           <div className="composer-input-row">
             <span className="composer-glyph">
@@ -231,20 +235,22 @@ export default function Panel() {
                   />
                 )}
               </button>
-              <button
-                className={`panel-row-remove${confirming ? ' panel-row-remove--confirm' : ''}`}
-                onClick={() => handleRemove(b.id)}
-                aria-label={confirming ? `Confirm removing ${b.name}` : `Remove ${b.name}`}
-                title={confirming ? 'Click again to remove' : 'Remove'}
-              >
-                <Trash2 size={14} />
-                {confirming && <span>Remove?</span>}
-              </button>
+              {!readOnly && (
+                <button
+                  className={`panel-row-remove${confirming ? ' panel-row-remove--confirm' : ''}`}
+                  onClick={() => handleRemove(b.id)}
+                  aria-label={confirming ? `Confirm removing ${b.name}` : `Remove ${b.name}`}
+                  title={confirming ? 'Click again to remove' : 'Remove'}
+                >
+                  <Trash2 size={14} />
+                  {confirming && <span>Remove?</span>}
+                </button>
+              )}
             </div>
           )
         })}
 
-        {chips.length > 0 && (
+        {chips.length > 0 && !readOnly && (
           <div className="panel-suggest">
             <div className="panel-suggest-head">
               <span>{list.length === 0 ? 'Start with' : 'Suggested'}</span>
@@ -290,7 +296,12 @@ export default function Panel() {
       </div>
 
       <footer className="panel-hint">
-        {placing ? (
+        {readOnly ? (
+          <>
+            <Hand size={14} />
+            <span>Read-only view &middot; click a building for details</span>
+          </>
+        ) : placing ? (
           <>
             <MousePointerClick size={14} />
             <span>

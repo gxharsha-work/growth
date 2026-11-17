@@ -63,7 +63,7 @@ export default function Scene({
         shadow-bias={-0.0015}
       />
 
-      <Island weather={weather} />
+      <Island weather={weather} health={weekHealth?.enoughData ? weekHealth.score : undefined} />
       <Ground teamId={teamId} interactive={interactive} />
       <Decor />
       <Paths teamId={teamId} />

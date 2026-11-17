@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { guessArchetype } from '../data/archetypes'
 import { api, probeApi } from '../lib/api'
+import { canWrite } from './authStore'
 
 export const GRID_SIZE = 8
 export const TILE_SIZE = 2
@@ -140,14 +141,19 @@ export const useVillageStore = create((set, get) => ({
 
   inBounds: (col, row) => isLandTile(col, row),
 
-  startPlacing: (draft) =>
+  // All building mutations are no-ops for a read-only (leadership) viewer.
+  // The backend rejects the write anyway (manager-only); this keeps the UI
+  // from optimistically showing a change that will never persist.
+  startPlacing: (draft) => {
+    if (!canWrite()) return
     set({
       placing: draft,
       draggingId: null,
       hoveredTile: null,
       selectedId: null,
       selectedScreenPos: null,
-    }),
+    })
+  },
 
   cancelPlacing: () => set({ placing: null, hoveredTile: null }),
 
@@ -187,6 +193,7 @@ export const useVillageStore = create((set, get) => ({
   },
 
   updateBuildingDetails: async (teamId, id, { name, notes, archetype }) => {
+    if (!canWrite()) return
     const patch = {
       ...(name !== undefined && { name }),
       ...(notes !== undefined && { notes }),
@@ -215,6 +222,7 @@ export const useVillageStore = create((set, get) => ({
   },
 
   removeBuilding: async (teamId, id) => {
+    if (!canWrite()) return
     if (!id.startsWith('local-') && (await probeApi())) {
       try {
         await api.delete(`/buildings/${id}`)
@@ -275,6 +283,7 @@ export const useVillageStore = create((set, get) => ({
 
   // Adds a capability on the tile the user clicked (placing mode).
   placeBuilding: async (teamId, col, row) => {
+    if (!canWrite()) return
     const { placing, isTileOccupied, inBounds, flashBlocked } = get()
     if (!placing) return
     if (!inBounds(col, row) || isTileOccupied(teamId, col, row)) {
@@ -307,6 +316,7 @@ export const useVillageStore = create((set, get) => ({
   // by suggestion chips. Returns the new id, or null when the island is
   // full.
   addCapability: async (teamId, { name, archetype }) => {
+    if (!canWrite()) return null
     const teamBuildings = get().buildingsByTeam[teamId] ?? {}
     const spot = pickAutoTile(teamBuildings)
     if (!spot) return null
@@ -350,12 +360,15 @@ export const useVillageStore = create((set, get) => ({
     }, 700)
   },
 
-  startDragging: (id) =>
-    set({ draggingId: id, placing: null, selectedId: null, selectedScreenPos: null }),
+  startDragging: (id) => {
+    if (!canWrite()) return
+    set({ draggingId: id, placing: null, selectedId: null, selectedScreenPos: null })
+  },
 
   cancelDragging: () => set({ draggingId: null, hoveredTile: null }),
 
   dropBuilding: async (teamId, col, row) => {
+    if (!canWrite()) return
     const { draggingId, buildingsByTeam, isTileOccupied, inBounds, flashBlocked } = get()
     if (!draggingId) return
     const teamBuildings = buildingsByTeam[teamId] ?? {}

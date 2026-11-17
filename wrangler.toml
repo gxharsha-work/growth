@@ -20,3 +20,21 @@ database_id = "ce889c2f-cd60-4182-83a2-7bac95d5289c"
 # in functions/api/_lib/app.ts's POST /api/insight. See EVALUATION.md.
 [ai]
 binding = "AI"
+
+# The ingestion Worker, reachable only through this binding (it has no public
+# URL). POST /api/admin/refresh uses it to run ingestion on demand.
+[[services]]
+binding = "INGEST"
+service = "growth-ingestion"
+
+# Production settings, shared by preview deployments so previews behave exactly
+# like production (both sit behind the same Cloudflare Access application).
+# ACCESS_AUD is the Access application's audience tag: an identifier, not a secret.
+# ADMIN_EMAILS is a Pages secret (wrangler pages secret put ADMIN_EMAILS), not listed here.
+[vars]
+ENVIRONMENT = "production"
+ACCESS_TEAM_DOMAIN = "growth-cmu.cloudflareaccess.com"
+ACCESS_AUD = "321a532af9058100b48c0ce4b752a474ac7522a3c9c542393cbdb2b4676b1940"
+AI_TIMEOUT_MS = "8000"
+# Signed-in users from these domains with no role row get read-only (leadership) access.
+READONLY_DOMAINS = "andrew.cmu.edu,cmu.edu"

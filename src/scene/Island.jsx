@@ -5,8 +5,22 @@ import { islandRadius, mulberry32 } from './gridUtils'
 import { getToonGradient } from './toonGradient'
 import { WEATHER_TRANSITION_RATE } from './GradientSky'
 
-const GRASS = '#7fca57'
-const GRASS_LIP = '#5fae45'
+// The grass surface shifts with team health: lush green when healthy, drying
+// to a muted straw/khaki as the score falls — the same wilt metaphor the
+// central KnowledgeGarden uses, now applied to the whole island so the score
+// reads at a glance across the scene. Colours lerp over [HEALTH_MIN, HEALTH_MAX]
+// (roughly the low→good band from levelFor) so differences between teams in the
+// realistic score range are clearly visible, and the transition is eased in
+// useFrame so switching team/week glides rather than snaps.
+const GRASS_VIBRANT = new THREE.Color('#7fca57')
+const GRASS_WILTED = new THREE.Color('#c8b35f')
+const LIP_VIBRANT = new THREE.Color('#5fae45')
+const LIP_WILTED = new THREE.Color('#a68f4a')
+const PATCH_VIBRANT = ['#8fd668', '#72bd4c'].map((c) => new THREE.Color(c))
+const PATCH_WILTED = new THREE.Color('#ccb866')
+const HEALTH_MIN = 45
+const HEALTH_MAX = 85
+
 const EARTH = '#a9744b'
 const ROCK = '#8d7a68'
 const ROCK_DARK = '#75655a'
@@ -121,8 +135,12 @@ function CloudSea({ weather }) {
   )
 }
 
-export default function Island({ weather = 'sunny' }) {
+export default function Island({ weather = 'sunny', health = 75 }) {
   const gradientMap = getToonGradient()
+  const grassMatRef = useRef()
+  const lipMatRef = useRef()
+  const patchMatRefs = useRef([])
+  const smoothedHealth = useRef(health)
 
   const geometry = useMemo(
     () => ({
@@ -147,7 +165,7 @@ export default function Island({ weather = 'sunny' }) {
             sx: 0.9 + rand() * 1.8,
             sz: 0.7 + rand() * 1.3,
             rot: rand() * Math.PI,
-            color: rand() > 0.5 ? '#8fd668' : '#72bd4c',
+            v: rand() > 0.5 ? 0 : 1, // which vibrant patch tone to dry out from
           }
         })
       })(),
@@ -155,11 +173,26 @@ export default function Island({ weather = 'sunny' }) {
     []
   )
 
+  // ease the grass palette toward the current team's health each frame
+  useFrame(() => {
+    smoothedHealth.current += (health - smoothedHealth.current) * 0.06
+    const t = THREE.MathUtils.clamp(
+      (smoothedHealth.current - HEALTH_MIN) / (HEALTH_MAX - HEALTH_MIN),
+      0,
+      1
+    )
+    grassMatRef.current?.color.lerpColors(GRASS_WILTED, GRASS_VIBRANT, t)
+    lipMatRef.current?.color.lerpColors(LIP_WILTED, LIP_VIBRANT, t)
+    geometry.patches.forEach((p, i) => {
+      patchMatRefs.current[i]?.color.lerpColors(PATCH_WILTED, PATCH_VIBRANT[p.v], t)
+    })
+  })
+
   return (
     <group>
       <mesh geometry={geometry.grass} receiveShadow>
-        <meshToonMaterial attach="material-0" color={GRASS} gradientMap={gradientMap} />
-        <meshToonMaterial attach="material-1" color={GRASS_LIP} gradientMap={gradientMap} />
+        <meshToonMaterial ref={grassMatRef} attach="material-0" color={GRASS_VIBRANT} gradientMap={gradientMap} />
+        <meshToonMaterial ref={lipMatRef} attach="material-1" color={LIP_VIBRANT} gradientMap={gradientMap} />
       </mesh>
       <mesh geometry={geometry.earth} position={[0, -0.42, 0]} receiveShadow>
         <meshToonMaterial color={EARTH} gradientMap={gradientMap} />
@@ -180,7 +213,11 @@ export default function Island({ weather = 'sunny' }) {
           receiveShadow
         >
           <circleGeometry args={[1, 18]} />
-          <meshToonMaterial color={p.color} gradientMap={gradientMap} />
+          <meshToonMaterial
+            ref={(el) => (patchMatRefs.current[i] = el)}
+            color={PATCH_VIBRANT[p.v]}
+            gradientMap={gradientMap}
+          />
         </mesh>
       ))}
       <CloudSea weather={weather} />

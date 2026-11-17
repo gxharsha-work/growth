@@ -63,3 +63,123 @@
 .empty-village-cta:hover {
   transform: translateY(-1px);
 }
+
+/* release and build identity, bottom-left, out of the way */
+.build-footer {
+  position: fixed;
+  left: 24px;
+  bottom: 10px;
+  z-index: 5;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 600;
+  color: #3d4652;
+  pointer-events: auto;
+}
+
+/* "How to read your village" legend, bottom-left above the build label */
+.corner-tools {
+  position: fixed;
+  left: 24px;
+  bottom: 40px;
+  z-index: 30; /* above the left panel (10) so the legend and report panels open on top */
+  display: flex;
+  gap: 8px;
+}
+
+.legend-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #3d4652;
+  cursor: pointer;
+}
+
+.legend-panel {
+  position: fixed;
+  left: 24px;
+  bottom: 84px;
+  z-index: 20;
+  width: min(340px, calc(100vw - 48px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.97); /* opaque: it overlaps the left panel */
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #2b323b;
+}
+
+.legend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.legend-close {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #3d4652;
+}
+
+.legend-panel dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.legend-row dt {
+  font-weight: 800;
+}
+
+.legend-row dd {
+  margin: 0;
+}
+
+.report-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.report-text {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid rgba(61, 70, 82, 0.25);
+  border-radius: 10px;
+  font: inherit;
+  resize: vertical;
+}
+
+.report-hint {
+  margin: 6px 0 8px;
+  color: #5b6472;
+  font-size: 11.5px;
+}
+
+.report-send {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #4f46e5;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.report-send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

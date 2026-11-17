@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 import {
   Ticket,
   CalendarDays,
+  GitPullRequest,
   ArrowLeftRight,
   ArrowLeft,
   TriangleAlert,
@@ -13,15 +14,37 @@ import {
 import { useAppStore } from '../store/appStore'
 import { useTeamsStore, listTeams } from '../store/teamsStore'
 import { useSignalsStore } from '../store/signalsStore'
-import { getTeamWeek } from '../logic/teamHealth'
+import { useAuthStore } from '../store/authStore'
+import { getTeamWeek, getWeekExplanation } from '../logic/teamHealth'
 import { levelFor } from '../logic/buildingStatus'
-import { SignalPill, JiraDetailsList, CalendarDetailsList } from './SignalPill'
+import { describeCohort } from '../logic/cohort'
+import { SignalPill } from './SignalPill'
 import ConnectCalendar from './ConnectCalendar'
 import CoachingNote from './CoachingNote'
+import RosterCard from './RosterCard'
 import './hud.css'
 
 const RING_RADIUS = 24
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS
+
+// Provenance tag shown on a signal pill: where this week's number came from.
+// Where a signal's numbers come from, in words a manager can check.
+const SOURCE_BADGE = {
+  live: { label: 'Live', tip: "Ingested daily from this team's real tools." },
+  demo: { label: 'Simulated', tip: 'Sample data for a demo team, not real activity.' },
+  placeholder: { label: 'No data', tip: 'Not connected for this team, so it is left out of the score.' },
+}
+const counted = (state) => state === 'live' || state === 'demo'
+
+function SourceTag({ state }) {
+  const badge = SOURCE_BADGE[state] ?? SOURCE_BADGE.placeholder
+  const kind = SOURCE_BADGE[state] ? state : 'placeholder'
+  return (
+    <span className={`hud-source-tag hud-source-tag--${kind}`} title={badge.tip} aria-label={`${badge.label}: ${badge.tip}`}>
+      {badge.label}
+    </span>
+  )
+}
 
 export default function TeamHUD() {
   const currentTeam = useAppStore((s) => s.currentTeam)
@@ -39,11 +62,15 @@ export default function TeamHUD() {
 
   const teams = useTeamsStore(useShallow(listTeams))
   const updateTeam = useTeamsStore((s) => s.updateTeam)
+  const readOnly = useAuthStore((s) => s.role) !== 'manager' // leadership can't edit teams
+  const isAdmin = useAuthStore((s) => s.isAdmin) // only admins rename or delete teams
   // Subscribed purely so this re-renders once signals finish loading async
   // (getTeamWeek below reads the store imperatively, not reactively).
   const signalSource = useSignalsStore((s) => s.sourceByTeam[currentTeam])
+  const loadError = useSignalsStore((s) => s.errorByTeam[currentTeam])
+  const withheld = useSignalsStore((s) => s.consentByTeam[currentTeam]?.scoreAllowed === false)
+  const explanation = getWeekExplanation(currentTeam, currentWeek)
 
-  const [expandedSignal, setExpandedSignal] = useState(null) // 'jira' | 'calendar' | null
   const [editingId, setEditingId] = useState(null) // null = create mode
   const [name, setName] = useState('')
   const [sizeBucket, setSizeBucket] = useState('')
@@ -52,6 +79,9 @@ export default function TeamHUD() {
   const inputRef = useRef(null)
 
   const weekHealth = getTeamWeek(currentTeam, currentWeek)
+  // A week without enough data cannot be checked against the rule, so no banner.
+  const showWarning = !!(explanation?.flagged && weekHealth?.enoughData)
+  const cohort = describeCohort(teams.find((t) => t.id === currentTeam), teams)
   const isCompare = viewMode === 'compare'
   const atCap = compareTeamIds.length >= 4
 
@@ -68,10 +98,6 @@ export default function TeamHUD() {
     const timer = setTimeout(() => setConfirmDeleteId(null), 2600)
     return () => clearTimeout(timer)
   }, [confirmDeleteId])
-
-  function toggleSignal(signal) {
-    setExpandedSignal((current) => (current === signal ? null : signal))
-  }
 
   function closeComposer() {
     closeTeamComposer()
@@ -122,7 +148,7 @@ export default function TeamHUD() {
 
   return (
     <div className="hud">
-      <div className="hud-teams glass" role={isCompare ? 'group' : 'tablist'} aria-label="Team">
+      <div className="hud-teams glass" role="group" aria-label="Teams">
         {isCompare && (
           <div className="hud-compare-picker-head">
             <span>{compareTeamIds.length}/4 selected</span>
@@ -138,9 +164,9 @@ export default function TeamHUD() {
           return (
             <div key={team.id} className="hud-team-row">
               <button
-                role={isCompare ? 'checkbox' : 'tab'}
+                role={isCompare ? 'checkbox' : undefined}
                 aria-checked={isCompare ? checked : undefined}
-                aria-selected={!isCompare ? currentTeam === team.id : undefined}
+                aria-pressed={!isCompare ? currentTeam === team.id : undefined}
                 aria-disabled={capped}
                 className={`hud-team${
                   !isCompare && currentTeam === team.id ? ' hud-team--active' : ''
@@ -148,37 +174,45 @@ export default function TeamHUD() {
                 onClick={() => (isCompare ? toggleCompareTeam(team.id) : setTeam(team.id))}
               >
                 <span className="hud-team-name">{team.name}</span>
-                {row && (
+                {row && row.enoughData && (
                   <span className={`hud-team-score hud-team-score--${levelFor(row.score)}`}>
                     {row.score}
                   </span>
                 )}
+                {row && !row.enoughData && (
+                  <span className="hud-team-score hud-team-score--none" title="Not enough data">
+                    –
+                  </span>
+                )}
               </button>
-              {!isCompare && (
+              {!isCompare && !readOnly && (
                 <span className="hud-team-actions">
                   <button
                     className="hud-team-edit"
-                    aria-label={`Rename ${team.name}`}
+                    aria-label={isAdmin ? `Rename ${team.name}` : `Edit cohort tags for ${team.name}`}
+                    title={isAdmin ? 'Rename or edit cohort' : 'Edit cohort tags'}
                     onClick={() => beginEdit(team)}
                   >
                     <Pencil size={13} />
                   </button>
-                  <button
-                    className={`hud-team-remove${confirming ? ' hud-team-remove--confirm' : ''}`}
-                    aria-label={confirming ? `Confirm delete ${team.name}` : `Delete ${team.name}`}
-                    title={confirming ? 'Click again to delete' : 'Delete'}
-                    onClick={() => handleRemoveTeam(team.id)}
-                  >
-                    <Trash2 size={13} />
-                    {confirming && <span>Delete?</span>}
-                  </button>
+                  {isAdmin && (
+                    <button
+                      className={`hud-team-remove${confirming ? ' hud-team-remove--confirm' : ''}`}
+                      aria-label={confirming ? `Confirm delete ${team.name}` : `Delete ${team.name}`}
+                      title={confirming ? 'Click again to delete' : 'Delete'}
+                      onClick={() => handleRemoveTeam(team.id)}
+                    >
+                      <Trash2 size={13} />
+                      {confirming && <span>Delete?</span>}
+                    </button>
+                  )}
                 </span>
               )}
             </div>
           )
         })}
 
-        {!isCompare && (
+        {!isCompare && !readOnly && (
           <button
             className={`hud-team-add${teamComposerOpen ? ' hud-team-add--open' : ''}`}
             onClick={toggleComposer}
@@ -189,7 +223,7 @@ export default function TeamHUD() {
           </button>
         )}
 
-        {!isCompare && (
+        {!isCompare && !readOnly && (
           <div
             className={`hud-team-composer-wrap${
               teamComposerOpen ? ' hud-team-composer-wrap--open' : ''
@@ -202,6 +236,8 @@ export default function TeamHUD() {
                 value={name}
                 maxLength={40}
                 placeholder="Team name"
+                disabled={!!editingId && !isAdmin}
+                title={editingId && !isAdmin ? 'Only an admin can rename a team' : undefined}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') submitTeam()
@@ -256,10 +292,43 @@ export default function TeamHUD() {
         )}
       </div>
 
-      {!isCompare && weekHealth && (
-        <div className={`hud-score glass hud-score--${levelFor(weekHealth.score)}`}>
+      {!isCompare && !weekHealth && loadError && (
+        <div className="hud-signal hud-signal--muted glass" role="alert">
+          This team's data could not be loaded. Check your connection and refresh the page.
+        </div>
+      )}
+      {!isCompare && !weekHealth && !loadError && !withheld && currentTeam && (
+        <div className="hud-signal hud-signal--muted glass" role="status">
+          Loading team data…
+        </div>
+      )}
+
+      {!isCompare && weekHealth && !weekHealth.enoughData && (
+        <div className="hud-score glass hud-score--none" role="status" aria-live="polite">
           <div className="hud-ring">
-            <svg viewBox="0 0 60 60" width="60" height="60">
+            <svg viewBox="0 0 60 60" width="60" height="60" aria-hidden="true">
+              <circle className="hud-ring-track" cx="30" cy="30" r={RING_RADIUS} />
+            </svg>
+            <span className="hud-score-value">–</span>
+          </div>
+          <div className="hud-score-text">
+            <span className="hud-score-title">Not enough data</span>
+            <span className="hud-score-label">
+              Week {weekHealth.week}: only {Math.round(weekHealth.coverage * 100)}% of the score's signals have data (needs 40%)
+            </span>
+          </div>
+        </div>
+      )}
+
+      {!isCompare && weekHealth && weekHealth.enoughData && (
+        <div
+          className={`hud-score glass hud-score--${levelFor(weekHealth.score)}`}
+          role="status"
+          aria-live="polite"
+          aria-label={`Team health score ${weekHealth.score} out of 100, week ${weekHealth.week}`}
+        >
+          <div className="hud-ring">
+            <svg viewBox="0 0 60 60" width="60" height="60" aria-hidden="true">
               <circle className="hud-ring-track" cx="30" cy="30" r={RING_RADIUS} />
               <circle
                 className="hud-ring-value"
@@ -279,36 +348,90 @@ export default function TeamHUD() {
         </div>
       )}
 
-      {!isCompare && weekHealth && signalSource === 'generated' && (
-        <div className="hud-signal hud-signal--muted glass">
-          Demo data — no live integration connected yet
+      {!isCompare && (
+        <div
+          className={`hud-warning-wrap${showWarning ? ' hud-warning-wrap--visible' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
+          {/* Text exists only when the rule fired this week, so nothing stale can be read. */}
+          {showWarning && (
+            <div className="hud-warning" title={explanation.rule}>
+              <TriangleAlert size={16} />
+              <span>{explanation.headline}</span>
+            </div>
+          )}
         </div>
       )}
 
       {!isCompare && weekHealth && (
+        <div className="hud-context glass">
+          {weekHealth.enoughData && explanation && (
+            <p className="hud-context-row" title={explanation.rule}>
+              <span>Baseline</span>
+              {explanation.baselineLine}
+            </p>
+          )}
+          {cohort && (
+            <p className="hud-context-row">
+              <span>Cohort</span>
+              {cohort.label}. {cohort.reason}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!isCompare && <RosterCard key={currentTeam} teamId={currentTeam} />}
+
+      {!isCompare && weekHealth && (
         <SignalPill
           icon={<Ticket size={15} />}
-          label={`Jira: ${weekHealth.signals.jira.avgCycleTimeDays}d cycle · ${weekHealth.signals.jira.sprintCompletionPct}% sprint`}
-          details={weekHealth.signals.jira.details}
-          renderDetails={(d) => <JiraDetailsList details={d} />}
-          expanded={expandedSignal === 'jira'}
-          onToggle={() => toggleSignal('jira')}
+          label={
+            counted(weekHealth.sources?.jira ?? 'demo')
+              ? `Jira: ${weekHealth.signals.jira.avgCycleTimeDays}d cycle · ${weekHealth.signals.jira.sprintCompletionPct}% sprint`
+              : 'Jira: no data this period'
+          }
+          tag={<SourceTag state={weekHealth.sources?.jira ?? 'demo'} />}
+        />
+      )}
+
+      {!isCompare && weekHealth && (
+        <SignalPill
+          icon={<GitPullRequest size={15} />}
+          label={
+            counted(weekHealth.sources?.github ?? 'demo')
+              ? `GitHub: ${weekHealth.signals.github.avgReviewTurnaroundHours}h reviews · ${weekHealth.signals.github.pctCommitsAfter7pm}% after 7pm`
+              : 'GitHub: not connected'
+          }
+          tag={<SourceTag state={weekHealth.sources?.github ?? 'demo'} />}
         />
       )}
 
       {!isCompare && weekHealth && (
         <SignalPill
           icon={<CalendarDays size={15} />}
-          label={`Meeting load: ${weekHealth.signals.calendar.avgMeetingHoursPerWeek}h this week`}
-          details={weekHealth.signals.calendar.details}
-          renderDetails={(d) => <CalendarDetailsList details={d} />}
-          expanded={expandedSignal === 'calendar'}
-          onToggle={() => toggleSignal('calendar')}
+          label={
+            counted(weekHealth.sources?.calendar ?? 'demo')
+              ? `Meeting load: ${weekHealth.signals.calendar.avgMeetingHoursPerWeek}h this week`
+              : 'Meeting load: no data this period'
+          }
+          tag={<SourceTag state={weekHealth.sources?.calendar ?? 'demo'} />}
         />
       )}
 
-      {!isCompare && weekHealth && (
-        <CoachingNote teamId={currentTeam} currentWeek={currentWeek} weekHealth={weekHealth} />
+      {/* Coaching is only meaningful on live data; demo/generated teams show why. */}
+      {!isCompare && weekHealth && signalSource === 'live' && weekHealth.enoughData && (
+        <CoachingNote teamId={currentTeam} weekHealth={weekHealth} />
+      )}
+      {!isCompare && weekHealth && signalSource === 'live' && !weekHealth.enoughData && (
+        <div className="hud-signal hud-signal--muted glass" role="status">
+          Not enough data this week for a score or a coaching note.
+        </div>
+      )}
+      {!isCompare && weekHealth && signalSource && signalSource !== 'live' && (
+        <div className="hud-signal hud-signal--muted glass">
+          AI coaching needs a team with live data (this team is {signalSource === 'generated' ? 'demo' : 'sample'} data).
+        </div>
       )}
 
       {!isCompare && <ConnectCalendar />}
@@ -317,15 +440,6 @@ export default function TeamHUD() {
         {isCompare ? <ArrowLeft size={15} /> : <ArrowLeftRight size={15} />}
         {isCompare ? 'Back to village' : 'Compare teams'}
       </button>
-
-      {!isCompare && (
-        <div className={`hud-warning-wrap${weekHealth?.earlyWarning ? ' hud-warning-wrap--visible' : ''}`}>
-          <div className="hud-warning">
-            <TriangleAlert size={16} />
-            <span>Early warning: rising cycle time and workload</span>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

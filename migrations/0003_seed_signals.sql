@@ -5,6 +5,9 @@
 -- functions/api/_lib/signals.ts serves their hand-tuned demo rows
 -- directly from code (HAND_TUNED_IDS), bypassing D1 entirely, so rows
 -- for those two ids would just be dead data.
+--
+-- Ticket summaries and event titles were removed from this file in Sprint 9
+-- (FR17: team-level aggregates only). Only the numbers the score uses remain.
 
-INSERT INTO signal_weeks (team_id, iso_week, source, payload, updated_at) VALUES ('solstice', '2026-W38', 'jira', '{"issueCount": 6, "avgCycleTimeDays": 4, "sprintCompletionPct": 17, "details": [{"key": "SCRUM-14", "summary": "TikTok Spark Ads creative testing", "status": "Testing", "countsAsDone": false, "cycleTimeDays": 4.05, "isProxy": true, "excludedReason": null}, {"key": "SCRUM-13", "summary": "Launch Meta Advantage+ shopping campaign", "status": "Done", "countsAsDone": true, "cycleTimeDays": 4.04, "isProxy": false, "excludedReason": null}, {"key": "SCRUM-11", "summary": "Rewrite copy for 10 highest-traffic category pages", "status": "In Progress", "countsAsDone": false, "cycleTimeDays": 4.05, "isProxy": true, "excludedReason": null}, {"key": "SCRUM-10", "summary": "Keyword & content gap analysis", "status": "In Progress", "countsAsDone": false, "cycleTimeDays": 0, "isProxy": true, "excludedReason": null}, {"key": "SCRUM-2", "summary": "[Legacy] Audit old affiliate partnerships", "status": "To Do", "countsAsDone": false, "cycleTimeDays": null, "isProxy": null, "excludedReason": "never entered In Progress/Testing"}, {"key": "SCRUM-1", "summary": "[Legacy] Migrate old blog CMS", "status": "Idea", "countsAsDone": false, "cycleTimeDays": null, "isProxy": null, "excludedReason": "never entered In Progress/Testing"}]}', 0);
-INSERT INTO signal_weeks (team_id, iso_week, source, payload, updated_at) VALUES ('solstice', '2026-W38', 'calendar', '{"avgMeetingHoursPerWeek": 2, "details": [{"title": "test past event", "hours": 1, "included": true, "reason": null}, {"title": "test event", "hours": 1, "included": true, "reason": null}]}', 0);
+INSERT INTO signal_weeks (team_id, iso_week, source, payload, updated_at) VALUES ('solstice', '2026-W38', 'jira', '{"issueCount": 6, "avgCycleTimeDays": 4, "sprintCompletionPct": 17}', 0);
+INSERT INTO signal_weeks (team_id, iso_week, source, payload, updated_at) VALUES ('solstice', '2026-W38', 'calendar', '{"avgMeetingHoursPerWeek": 2}', 0);

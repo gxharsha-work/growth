@@ -380,6 +380,11 @@
   box-shadow: 0 0 0 4px rgba(229, 72, 77, 0.18);
 }
 
+.panel-dot--none {
+  background: #9aa3ae;
+  box-shadow: 0 0 0 4px rgba(91, 100, 114, 0.15);
+}
+
 .panel-row-remove {
   display: inline-flex;
   align-items: center;

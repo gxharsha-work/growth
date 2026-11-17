@@ -12,8 +12,12 @@ import { useVillageStore } from './store/villageStore'
 import { useAppStore } from './store/appStore'
 import { useTeamsStore } from './store/teamsStore'
 import { useSignalsStore } from './store/signalsStore'
+import { useAuthStore } from './store/authStore'
 import { getTeamWeek } from './logic/teamHealth'
 import './App.css'
+import BuildFooter from './ui/BuildFooter'
+import VillageLegend from './ui/VillageLegend'
+import ReportIssue from './ui/ReportIssue'
 
 export default function App() {
   const cancelPlacing = useVillageStore((s) => s.cancelPlacing)
@@ -41,6 +45,7 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     async function bootstrap() {
+      useAuthStore.getState().loadRole()
       await useTeamsStore.getState().hydrate()
       if (cancelled) return
       const ids = Object.keys(useTeamsStore.getState().teams)
@@ -82,14 +87,14 @@ export default function App() {
   const isCompare = viewMode === 'compare'
 
   return (
-    <div className="app-root">
+    <main className="app-root">
       {isCompare ? (
         <CompareView />
       ) : hasTeam ? (
         <>
           <Canvas
             className="app-canvas"
-            shadows="soft"
+            shadows="percentage"
             gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
             camera={{ fov: 42, near: 0.1, far: 500 }}
           >
@@ -103,6 +108,11 @@ export default function App() {
       )}
       <TeamHUD />
       <Timeline />
-    </div>
+      <div className="corner-tools">
+        <VillageLegend />
+        <ReportIssue />
+      </div>
+      <BuildFooter />
+    </main>
   )
 }

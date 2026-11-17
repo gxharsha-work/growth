@@ -1,0 +1,581 @@
+[
+  {
+    "id": "platform-w1",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w1",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "platform-w2",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w2",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "platform-w3",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w3",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "platform-w4",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w4",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "platform-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w5",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner.",
+        "reason": "",
+        "ms": 1439
+      },
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner.",
+        "reason": "",
+        "ms": 1832
+      },
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner.",
+        "reason": "",
+        "ms": 2111
+      }
+    ]
+  },
+  {
+    "id": "platform-w6",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w6",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 1711
+      },
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 1742
+      },
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 2011
+      }
+    ]
+  },
+  {
+    "id": "platform-w7",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w7",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 1806
+      },
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 1599
+      },
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 1671
+      }
+    ]
+  },
+  {
+    "id": "platform-w8",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "backend-w8",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 1724
+      },
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 1850
+      },
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 1692
+      }
+    ]
+  },
+  {
+    "id": "team-a1-w5",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 2646
+      },
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1361
+      },
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1256
+      }
+    ]
+  },
+  {
+    "id": "team-a1-w8",
+    "status": "low",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner for all meetings this sprint.",
+        "reason": "",
+        "ms": 2509
+      },
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner for all meetings this sprint.",
+        "reason": "",
+        "ms": 1695
+      },
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings: keep the ones that produce decisions, shorten or cancel the rest, and require an agenda and an owner for all meetings this sprint.",
+        "reason": "",
+        "ms": 1783
+      }
+    ]
+  },
+  {
+    "id": "team-a2-w5",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that do not, requiring an agenda and an owner for the remaining meetings.",
+        "reason": "",
+        "ms": 1643
+      },
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that do not, requiring an agenda and an owner for the remaining meetings.",
+        "reason": "",
+        "ms": 1615
+      },
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that do not, requiring an agenda and an owner for the remaining meetings.",
+        "reason": "",
+        "ms": 1599
+      }
+    ]
+  },
+  {
+    "id": "team-a2-w8",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1296
+      },
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1691
+      },
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1703
+      }
+    ]
+  },
+  {
+    "id": "team-a3-w5",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1750
+      },
+      {
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 2601
+      },
+      {
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1683
+      }
+    ]
+  },
+  {
+    "id": "team-a3-w8",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1570
+      },
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1324
+      },
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1765
+      }
+    ]
+  },
+  {
+    "id": "team-a4-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-a4-w8",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-a5-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-a5-w8",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-b1-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-b1-w8",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1541
+      },
+      {
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1617
+      },
+      {
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1585
+      }
+    ]
+  },
+  {
+    "id": "team-b2-w5",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 2111
+      },
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 2377
+      },
+      {
+        "source": "model",
+        "raw": "Agree a service level for the first review within one working day and check review load per reviewer and pull request size to identify potential bottlenecks.",
+        "reason": "",
+        "ms": 1844
+      }
+    ]
+  },
+  {
+    "id": "team-b2-w8",
+    "status": "concern",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1496
+      },
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1541
+      },
+      {
+        "source": "model",
+        "raw": "Limit work in progress to ensure items finish before new ones start, focusing on the oldest in-progress items first.",
+        "reason": "",
+        "ms": 1453
+      }
+    ]
+  },
+  {
+    "id": "team-b3-w5",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that don't, requiring an agenda and owner for the remaining meetings.",
+        "reason": "",
+        "ms": 1927
+      },
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that don't, requiring an agenda and owner for the remaining meetings.",
+        "reason": "",
+        "ms": 1885
+      },
+      {
+        "source": "model",
+        "raw": "Audit recurring meetings to ensure they produce decisions and actions, and shorten or cancel those that don't, requiring an agenda and owner for the remaining meetings.",
+        "reason": "",
+        "ms": 1768
+      }
+    ]
+  },
+  {
+    "id": "team-b3-w8",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan any unfinished work from the last sprint to prioritize and allocate resources effectively.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 1640
+      },
+      {
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan any unfinished work from the last sprint to prioritize and allocate resources effectively.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 2186
+      },
+      {
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan any unfinished work from the last sprint to prioritize and allocate resources effectively.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 1906
+      }
+    ]
+  },
+  {
+    "id": "team-b4-w5",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 2149
+      },
+      {
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1735
+      },
+      {
+        "source": "model",
+        "raw": "Ensure sprint capacity is not being consumed by unplanned requests, and verify that team members are taking scheduled time off to maintain a sustainable pace.",
+        "reason": "",
+        "ms": 1728
+      }
+    ]
+  },
+  {
+    "id": "team-b4-w8",
+    "status": "steady",
+    "runs": [
+      {
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan unfinished work from previous sprints to ensure a buffer for unexpected tasks and stretch goals.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 2077
+      },
+      {
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan unfinished work from previous sprints to ensure a buffer for unexpected tasks and stretch goals.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 1863
+      },
+      {
+        "source": "template",
+        "raw": "Reduce team capacity to 80% of current levels, and re-plan unfinished work from previous sprints to ensure a buffer for unexpected tasks and stretch goals.",
+        "reason": "number 80 is not attached to a known field",
+        "ms": 2112
+      }
+    ]
+  },
+  {
+    "id": "team-b5-w5",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  },
+  {
+    "id": "team-b5-w8",
+    "status": "healthy",
+    "runs": [
+      {
+        "source": "template"
+      }
+    ]
+  }
+]

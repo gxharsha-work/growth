@@ -15,7 +15,9 @@
     "db:migrate:remote": "wrangler d1 migrations apply growth-db --remote",
     "ingest:jira": "node --env-file=.env scripts/jira-ingest.js",
     "auth:calendar": "node --env-file=.env scripts/google-calendar-auth.js",
-    "ingest:calendar": "node --env-file=.env scripts/google-calendar-ingest.js"
+    "ingest:calendar": "node --env-file=.env scripts/google-calendar-ingest.js",
+    "test": "node scripts/run-all-tests.mjs",
+    "check": "npm run lint && tsc --noEmit && (cd worker-ingestion && ../node_modules/.bin/tsc --noEmit -p tsconfig.json) && npm run build && npm test"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

@@ -73,32 +73,53 @@ export const WEIGHTS = {
   meetingLoad: 0.2,
 }
 
+// Mirror of functions/api/_lib/scoring.ts's rule — kept identical so the
+// browser and server always agree (scripts/test-scoring-parity.mjs checks it).
+// A term counts unless its source is a placeholder (or absent); the remaining
+// weights are rescaled, so an unconnected integration doesn't distort the score.
+function sourceIncluded(src) {
+  return src === 'live' || src === 'demo'
+}
+
 /**
  * Composite 0-100 health score for one team, one week.
  * `weekSignals` is one entry from data/mockSignals.js:
  *   { jira: {...}, github: {...}, calendar: {...} }
+ * `sources` (optional) is { jira, github, calendar } provenance; omitted
+ * counts everything (identical to the original weighting).
  */
-export function computeHealthScore(weekSignals) {
+export function computeHealthScore(weekSignals, sources) {
   const { jira, github, calendar } = weekSignals
-
-  const cycleScore = normalizeCycleTime(jira.avgCycleTimeDays)
-  const completionScore = normalizeCompletion(jira.sprintCompletionPct)
-  const reviewScore = normalizeReviewTurnaround(
-    github.avgReviewTurnaroundHours
-  )
-  const afterHoursScore = normalizeAfterHoursCommits(
-    github.pctCommitsAfter7pm
-  )
-  const meetingScore = normalizeMeetingLoad(calendar.avgMeetingHoursPerWeek)
-
-  const composite =
-    cycleScore * WEIGHTS.cycleTime +
-    completionScore * WEIGHTS.completion +
-    reviewScore * WEIGHTS.reviewTurnaround +
-    afterHoursScore * WEIGHTS.afterHoursCommits +
-    meetingScore * WEIGHTS.meetingLoad
-
+  const terms = [
+    { norm: normalizeCycleTime(jira.avgCycleTimeDays), weight: WEIGHTS.cycleTime, src: sources?.jira },
+    { norm: normalizeCompletion(jira.sprintCompletionPct), weight: WEIGHTS.completion, src: sources?.jira },
+    { norm: normalizeReviewTurnaround(github.avgReviewTurnaroundHours), weight: WEIGHTS.reviewTurnaround, src: sources?.github },
+    { norm: normalizeAfterHoursCommits(github.pctCommitsAfter7pm), weight: WEIGHTS.afterHoursCommits, src: sources?.github },
+    { norm: normalizeMeetingLoad(calendar.avgMeetingHoursPerWeek), weight: WEIGHTS.meetingLoad, src: sources?.calendar },
+  ]
+  const active = sources ? terms.filter((t) => sourceIncluded(t.src)) : terms
+  const totalWeight = active.reduce((s, t) => s + t.weight, 0)
+  if (totalWeight === 0) return 0
+  const composite = active.reduce((s, t) => s + t.norm * t.weight, 0) / totalWeight
   return Math.round(clamp(composite, 0, 100))
+}
+
+// --- data coverage -----------------------------------------------------------
+// Share of the score's weight that comes from counted (live or demo) signals.
+// Below MIN_COVERAGE the week shows "Not enough data" instead of a number.
+// Display rule only: computeHealthScore and the early-warning rule are unchanged.
+export const MIN_COVERAGE = 0.4
+
+export function computeDataCoverage(sources) {
+  if (!sources) return 1
+  const parts = [
+    [WEIGHTS.cycleTime, sources.jira],
+    [WEIGHTS.completion, sources.jira],
+    [WEIGHTS.reviewTurnaround, sources.github],
+    [WEIGHTS.afterHoursCommits, sources.github],
+    [WEIGHTS.meetingLoad, sources.calendar],
+  ]
+  return Math.round(parts.reduce((s, [w, src]) => s + (sourceIncluded(src) ? w : 0), 0) * 100) / 100
 }
 
 // --- narrower sub-scores, used to drive specific visuals --------------------
@@ -107,21 +128,21 @@ export function computeHealthScore(weekSignals) {
 
 // Jira + GitHub only (no calendar) — how well the team is actually shipping.
 // Drives the Capability Building's level/condition.
-export function computeCapabilityScore(weekSignals) {
+export function computeCapabilityScore(weekSignals, sources) {
   const { jira, github } = weekSignals
-  const cycleScore = normalizeCycleTime(jira.avgCycleTimeDays)
-  const completionScore = normalizeCompletion(jira.sprintCompletionPct)
-  const reviewScore = normalizeReviewTurnaround(
-    github.avgReviewTurnaroundHours
-  )
-  const afterHoursScore = normalizeAfterHoursCommits(
-    github.pctCommitsAfter7pm
-  )
-  const composite =
-    cycleScore * 0.3 +
-    completionScore * 0.3 +
-    reviewScore * 0.25 +
-    afterHoursScore * 0.15
+  // Same provenance rule as computeHealthScore: a placeholder source drops
+  // out and the remaining weights rescale. Omitting `sources` counts all
+  // four terms (the original math). null = no counted signal at all.
+  const terms = [
+    { norm: normalizeCycleTime(jira.avgCycleTimeDays), weight: 0.3, src: sources?.jira },
+    { norm: normalizeCompletion(jira.sprintCompletionPct), weight: 0.3, src: sources?.jira },
+    { norm: normalizeReviewTurnaround(github.avgReviewTurnaroundHours), weight: 0.25, src: sources?.github },
+    { norm: normalizeAfterHoursCommits(github.pctCommitsAfter7pm), weight: 0.15, src: sources?.github },
+  ]
+  const active = sources ? terms.filter((t) => sourceIncluded(t.src)) : terms
+  const totalWeight = active.reduce((s, t) => s + t.weight, 0)
+  if (totalWeight === 0) return null
+  const composite = active.reduce((s, t) => s + t.norm * t.weight, 0) / totalWeight
   return Math.round(clamp(composite, 0, 100))
 }
 

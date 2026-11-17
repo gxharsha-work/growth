@@ -118,3 +118,7 @@ returns a log of what happened.
   today (one Jira board, one calendar, configured via `wrangler.toml`
   `[vars]`). Multiple pilot teams each connecting their own Jira/Calendar
   through the UI is a real fast-follow, not attempted here.
+
+## Auth, roles and post-deploy checks
+
+The auth work (Cloudflare Access, `role_assignments`, rate limiting) and the environment variables it needs (`ENVIRONMENT`, `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, optional `AI_TIMEOUT_MS`) are not covered above. See **HANDOFF.md §4** for the setup steps, the cleanup of legacy ingestion rows, and the smoke tests to run after deploying.

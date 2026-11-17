@@ -46,12 +46,12 @@ export async function runCalendarIngestion(env: CalendarEnv, log: string[]) {
   let totalHours = 0
   const details = events.map((event) => {
     const result = classifyEvent(event)
-    const title = (event as { summary?: string }).summary ?? '(untitled)'
+    // The event title is deliberately not stored (FR17: team-level aggregates only).
     if (result.include) {
       totalHours += result.hours!
-      return { title, hours: Math.round(result.hours! * 10) / 10, included: true, reason: null }
+      return { hours: Math.round(result.hours! * 10) / 10, included: true, reason: null }
     }
-    return { title, hours: null, included: false, reason: result.reason ?? null }
+    return { hours: null, included: false, reason: result.reason ?? null }
   })
 
   log.push(`Calendar: ${events.length} events in window, ${Math.round(totalHours * 10) / 10}h counted`)
