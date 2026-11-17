@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { api, probeApi } from '../lib/api'
 import { getWeeklySignalsForTeam, getSignalSource } from '../data/mockSignals'
+import { invalidateTeamHealth } from '../logic/teamHealthCache'
 
 // Holds each team's raw weekly signal rows — NOT the computed health score;
 // that stays in src/logic/healthScore.js, run client-side against whatever
@@ -16,6 +17,7 @@ import { getWeeklySignalsForTeam, getSignalSource } from '../data/mockSignals'
 export const useSignalsStore = create((set, get) => ({
   weeklyByTeam: {}, // teamId -> array of { week, jira, github, calendar }
   sourceByTeam: {}, // teamId -> 'hand-tuned' | 'live' | 'generated'
+  consentByTeam: {}, // teamId -> { total, consented, minConsented, scoreAllowed } (FR18)
   loadedTeams: new Set(),
 
   // Loads a team's signals the first time it's viewed. Safe to call
@@ -26,10 +28,11 @@ export const useSignalsStore = create((set, get) => ({
 
     if (await probeApi()) {
       try {
-        const { weeks, source } = await api.get(`/teams/${teamId}/signals`)
+        const { weeks, source, consent } = await api.get(`/teams/${teamId}/signals`)
         set((state) => ({
           weeklyByTeam: { ...state.weeklyByTeam, [teamId]: weeks },
           sourceByTeam: { ...state.sourceByTeam, [teamId]: source },
+          consentByTeam: { ...state.consentByTeam, [teamId]: consent ?? null },
         }))
         return
       } catch (err) {
@@ -41,5 +44,17 @@ export const useSignalsStore = create((set, get) => ({
       weeklyByTeam: { ...state.weeklyByTeam, [teamId]: getWeeklySignalsForTeam(teamId) },
       sourceByTeam: { ...state.sourceByTeam, [teamId]: getSignalSource(teamId) },
     }))
+  },
+
+  // Re-reads a team's signals after its consent changes (the server decides
+  // whether they are withheld), dropping the cached health rows first.
+  reloadSignals: async (teamId) => {
+    invalidateTeamHealth(teamId)
+    set((state) => {
+      const loadedTeams = new Set(state.loadedTeams)
+      loadedTeams.delete(teamId)
+      return { loadedTeams }
+    })
+    await get().ensureSignals(teamId)
   },
 }))

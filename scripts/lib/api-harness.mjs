@@ -83,8 +83,12 @@ export async function call(env, method, p, { body, email, headers = {} } = {}) {
 }
 
 // Ingested signal rows, shaped like worker-ingestion writes them. Each week: [issueCount, cycleDays, completionPct, meetingHours]
-export function addLiveTeam(sqlite, id, name, weeks, { cohort = ['6-10 engineers', 'Backend/Platform'], jiraExtra = {}, calendarExtra = {} } = {}) {
+// `consented` opted-in roster members are added (FR18 needs >= 3 for a live team to be scored).
+export function addLiveTeam(sqlite, id, name, weeks, { cohort = ['6-10 engineers', 'Backend/Platform'], jiraExtra = {}, calendarExtra = {}, consented = 3, notConsented = 0 } = {}) {
   sqlite.prepare('INSERT INTO teams (id, name, size_bucket, function_type, capabilities, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, name, cohort[0], cohort[1], '[]', Date.now())
+  for (let k = 0; k < consented + notConsented; k++) {
+    sqlite.prepare('INSERT INTO roster_members (team_id, name, role, consented, updated_at) VALUES (?, ?, ?, ?, 0)').run(id, `Member ${k + 1}`, 'Engineer', k < consented ? 1 : 0)
+  }
   weeks.forEach((w, i) => {
     const iso = `2026-W${String(20 + i).padStart(2, '0')}`
     sqlite.prepare('INSERT INTO signal_weeks (team_id, iso_week, source, payload, updated_at) VALUES (?, ?, ?, ?, ?)').run(id, iso, 'jira', JSON.stringify({ issueCount: w[0], avgCycleTimeDays: w[1], sprintCompletionPct: w[2], ...jiraExtra }), Date.now())

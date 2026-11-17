@@ -16,6 +16,7 @@ import { buildEvidence } from './evidence'
 import { resolveUser, type AuthEnv, type AuthedUser } from './auth'
 import { checkCoachingRateLimit } from './ratelimit'
 import { MIN_COVERAGE } from './scoring'
+import { getRoster, summarizeConsent, parseRosterCsv } from './roster'
 
 type Env = AuthEnv & { AI: Ai; AI_TIMEOUT_MS?: string }
 type Vars = { user: AuthedUser }
@@ -255,12 +256,70 @@ app.delete('/buildings/:id', async (c) => {
 app.get('/teams/:id/signals', async (c) => {
   const teamId = c.req.param('id')
   const { weeks, source } = await getSignalsForTeam(c.env.DB, teamId)
+  // FR18: live data about real people is withheld until enough members opt in.
+  const consent = summarizeConsent(await getRoster(c.env.DB, teamId), source)
+  if (!consent.scoreAllowed) return c.json({ weeks: [], source, consent, withheld: 'consent_required' })
   const aggregated = weeks.map((w) => ({
     ...w,
     jira: { issueCount: w.jira.issueCount, avgCycleTimeDays: w.jira.avgCycleTimeDays, sprintCompletionPct: w.jira.sprintCompletionPct },
     calendar: { avgMeetingHoursPerWeek: w.calendar.avgMeetingHoursPerWeek },
   }))
-  return c.json({ weeks: aggregated, source })
+  return c.json({ weeks: aggregated, source, consent })
+})
+
+// ---------- roster and consent (FR4, FR18) ----------
+
+app.get('/teams/:id/roster', async (c) => {
+  const teamId = c.req.param('id')
+  const team = await c.env.DB.prepare('SELECT id FROM teams WHERE id = ?').bind(teamId).first<{ id: string }>()
+  if (!team) return c.json({ error: 'team not found' }, 404)
+  const { source } = await getSignalsForTeam(c.env.DB, teamId)
+  const members = await getRoster(c.env.DB, teamId)
+  return c.json({ members, consent: summarizeConsent(members, source) })
+})
+
+// The team lead records a member's opt-in (or withdrawal).
+app.patch('/roster/:memberId', async (c) => {
+  const memberId = Number(c.req.param('memberId'))
+  const body = await c.req.json<{ consented?: unknown }>()
+  if (!Number.isInteger(memberId) || typeof body?.consented !== 'boolean') {
+    return c.json({ error: 'consented (true or false) is required' }, 400)
+  }
+  const now = Date.now()
+  const r = await c.env.DB.prepare('UPDATE roster_members SET consented = ?, consent_updated_at = ?, updated_at = ? WHERE id = ?')
+    .bind(body.consented ? 1 : 0, now, now, memberId)
+    .run()
+  if (!r.meta?.changes) return c.json({ error: 'member not found' }, 404)
+  return c.json({ id: memberId, consented: body.consented })
+})
+
+// CSV roster import: all rows are checked first; any error means nothing is written.
+app.post('/teams/:id/roster/import', async (c) => {
+  const teamId = c.req.param('id')
+  const team = await c.env.DB.prepare('SELECT id, name FROM teams WHERE id = ?').bind(teamId).first<{ id: string; name: string }>()
+  if (!team) return c.json({ error: 'team not found' }, 404)
+  const body = await c.req.json<{ csv?: unknown }>()
+  if (typeof body?.csv !== 'string' || !body.csv.trim()) return c.json({ error: 'csv text is required' }, 400)
+  if (body.csv.length > 50_000) return c.json({ error: 'csv is too large (max 50 KB)' }, 400)
+
+  const { rows, errors } = parseRosterCsv(body.csv, team)
+  if (errors.length) return c.json({ error: 'csv has errors; nothing was imported', errors }, 400)
+  if (rows.length === 0) return c.json({ error: 'csv has no member rows' }, 400)
+
+  const now = Date.now()
+  await c.env.DB.batch(
+    rows.map((r) =>
+      c.env.DB.prepare(
+        `INSERT INTO roster_members (team_id, name, role, consented, consent_updated_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT (team_id, name) DO UPDATE SET role = excluded.role, consented = excluded.consented,
+           consent_updated_at = excluded.consent_updated_at, updated_at = excluded.updated_at`
+      ).bind(teamId, r.name, r.role, r.consented ? 1 : 0, now, now)
+    )
+  )
+  const { source } = await getSignalsForTeam(c.env.DB, teamId)
+  const members = await getRoster(c.env.DB, teamId)
+  return c.json({ imported: rows.length, members, consent: summarizeConsent(members, source) })
 })
 
 // ---------- AI coaching (Sprint 3's stage 5 — see _lib/coaching.ts) ----------
@@ -293,6 +352,9 @@ app.post('/insight', async (c) => {
   if (built.source !== 'live') {
     return c.json({ error: 'demo_data' }, 403)
   }
+
+  const consent = summarizeConsent(await getRoster(c.env.DB, body.teamId), built.source)
+  if (!consent.scoreAllowed) return c.json({ error: 'consent_required', consent }, 403)
 
   // Too little data to trust the score: no note at all, rather than one about a partial picture.
   if (built.coverage < MIN_COVERAGE) {

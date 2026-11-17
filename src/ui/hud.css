@@ -296,6 +296,79 @@
   color: #5b6472;
 }
 
+/* ---------- roster and consent (FR4, FR18) ---------- */
+.hud-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  color: #3d4652;
+}
+
+.hud-roster-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.hud-roster-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hud-roster-list label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.hud-roster-name {
+  font-weight: 600;
+}
+
+.hud-roster-role,
+.hud-roster-hint,
+.hud-roster-empty {
+  color: #5b6472;
+}
+
+.hud-roster-hint,
+.hud-roster-note {
+  margin: 0;
+}
+
+.hud-roster-note {
+  font-weight: 600;
+  color: #7a4b00;
+}
+
+.hud-roster-import {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border: 1px solid rgba(61, 70, 82, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* ---------- score ring ---------- */
 .hud-score {
   display: flex;

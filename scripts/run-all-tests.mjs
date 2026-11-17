@@ -31,6 +31,7 @@ const UNIT = [
   'scripts/test-access.mjs',
   'scripts/test-early-warning-text.mjs',
   'scripts/test-coverage.mjs',
+  'scripts/test-roster-consent.mjs',
 ]
 for (const file of UNIT) {
   const r = run('node', ['--no-warnings', file])

@@ -20,6 +20,7 @@ import { describeCohort } from '../logic/cohort'
 import { SignalPill } from './SignalPill'
 import ConnectCalendar from './ConnectCalendar'
 import CoachingNote from './CoachingNote'
+import RosterCard from './RosterCard'
 import './hud.css'
 
 const RING_RADIUS = 24
@@ -336,6 +337,8 @@ export default function TeamHUD() {
           )}
         </div>
       )}
+
+      {!isCompare && <RosterCard key={currentTeam} teamId={currentTeam} />}
 
       {!isCompare && weekHealth && (
         <SignalPill

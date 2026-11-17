@@ -15,7 +15,7 @@ import {
 } from './healthScore'
 import { explainWeek } from './earlyWarningExplain'
 
-const cache = new Map()
+import { healthCache as cache } from './teamHealthCache'
 
 /**
  * Returns an array of 8 rows for a team, one per week:

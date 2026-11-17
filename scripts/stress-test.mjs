@@ -56,6 +56,8 @@ const OK_AI = (log = []) => ({ run: async (_m, opts) => { log.push(opts.messages
 // A live team = ingested Jira signal in D1 (source 'live'). Each week: [issueCount, cycleDays, completionPct, meetingHours]
 function addLiveTeam(sqlite, id, name, weeks, { cohort = ['6-10 engineers', 'Backend/Platform'] } = {}) {
   sqlite.prepare('INSERT INTO teams (id, name, size_bucket, function_type, capabilities, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, name, cohort[0], cohort[1], '[]', Date.now())
+  // FR18 (Sprint 9): a live team is scored only with >= 3 opted-in members, so fixtures carry a consented roster.
+  for (const m of ['A', 'B', 'C']) sqlite.prepare('INSERT INTO roster_members (team_id, name, role, consented, updated_at) VALUES (?, ?, ?, 1, 0)').run(id, `Member ${m}`, 'Engineer')
   weeks.forEach((w, i) => {
     const iso = `2026-W${String(20 + i).padStart(2, '0')}`
     const jira = typeof w === 'string' ? w : JSON.stringify({ issueCount: w[0], avgCycleTimeDays: w[1], sprintCompletionPct: w[2] })
