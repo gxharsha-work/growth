@@ -96,9 +96,9 @@ export async function runJiraIngestion(env: JiraEnv, log: string[]): Promise<Jir
     const searchData = await fetchJson<{
       issues: {
         key: string
-        fields: { summary: string; created: string; status: { name: string; statusCategory: { key: string } } }
+        fields: { created: string; status: { name: string; statusCategory: { key: string } } }
       }[]
-    }>(`/rest/api/3/search/jql?jql=sprint=${sprint.id}&fields=status,created,summary&maxResults=100`)
+    }>(`/rest/api/3/search/jql?jql=sprint=${sprint.id}&fields=status,created&maxResults=100`) // no summary: never fetched, never stored (FR17)
     const issues = searchData.issues
 
     const issueCount = issues.length
