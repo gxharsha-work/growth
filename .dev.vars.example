@@ -8,3 +8,6 @@ DEV_AUTH_ROLE=manager
 # Required in production; without them every request is rejected with 401.
 ACCESS_TEAM_DOMAIN=your-team.cloudflareaccess.com
 ACCESS_AUD=replace-with-access-application-aud-tag
+
+# Comma-separated admin emails: may rename and delete teams (always manager rights).
+ADMIN_EMAILS=you@example.edu

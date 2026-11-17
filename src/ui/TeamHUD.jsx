@@ -47,6 +47,7 @@ export default function TeamHUD() {
   const teams = useTeamsStore(useShallow(listTeams))
   const updateTeam = useTeamsStore((s) => s.updateTeam)
   const readOnly = useAuthStore((s) => s.role) !== 'manager' // leadership can't edit teams
+  const isAdmin = useAuthStore((s) => s.isAdmin) // only admins rename or delete teams
   // Subscribed purely so this re-renders once signals finish loading async
   // (getTeamWeek below reads the store imperatively, not reactively).
   const signalSource = useSignalsStore((s) => s.sourceByTeam[currentTeam])
@@ -161,20 +162,23 @@ export default function TeamHUD() {
                 <span className="hud-team-actions">
                   <button
                     className="hud-team-edit"
-                    aria-label={`Rename ${team.name}`}
+                    aria-label={isAdmin ? `Rename ${team.name}` : `Edit cohort tags for ${team.name}`}
+                    title={isAdmin ? 'Rename or edit cohort' : 'Edit cohort tags'}
                     onClick={() => beginEdit(team)}
                   >
                     <Pencil size={13} />
                   </button>
-                  <button
-                    className={`hud-team-remove${confirming ? ' hud-team-remove--confirm' : ''}`}
-                    aria-label={confirming ? `Confirm delete ${team.name}` : `Delete ${team.name}`}
-                    title={confirming ? 'Click again to delete' : 'Delete'}
-                    onClick={() => handleRemoveTeam(team.id)}
-                  >
-                    <Trash2 size={13} />
-                    {confirming && <span>Delete?</span>}
-                  </button>
+                  {isAdmin && (
+                    <button
+                      className={`hud-team-remove${confirming ? ' hud-team-remove--confirm' : ''}`}
+                      aria-label={confirming ? `Confirm delete ${team.name}` : `Delete ${team.name}`}
+                      title={confirming ? 'Click again to delete' : 'Delete'}
+                      onClick={() => handleRemoveTeam(team.id)}
+                    >
+                      <Trash2 size={13} />
+                      {confirming && <span>Delete?</span>}
+                    </button>
+                  )}
                 </span>
               )}
             </div>
@@ -205,6 +209,8 @@ export default function TeamHUD() {
                 value={name}
                 maxLength={40}
                 placeholder="Team name"
+                disabled={!!editingId && !isAdmin}
+                title={editingId && !isAdmin ? 'Only an admin can rename a team' : undefined}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') submitTeam()

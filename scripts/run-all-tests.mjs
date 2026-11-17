@@ -28,6 +28,7 @@ const UNIT = [
   'scripts/test-scoring-parity.mjs',
   'scripts/test-no-raw-text.mjs',
   'scripts/test-api-no-raw-text.mjs',
+  'scripts/test-access.mjs',
 ]
 for (const file of UNIT) {
   const r = run('node', ['--no-warnings', file])

@@ -10,8 +10,10 @@ import { api, probeApi } from '../lib/api'
 // Offline / plain `npm run dev` (no backend reachable): default to 'manager'
 // so local UI iteration keeps full controls. Backend reachable but no role
 // assigned: fall back to least privilege ('leadership').
+// isAdmin (ADMIN_EMAILS on the server) unlocks renaming and deleting teams.
 export const useAuthStore = create((set, get) => ({
   role: 'manager',
+  isAdmin: true,
   roleLoaded: false,
 
   loadRole: async () => {
@@ -22,9 +24,9 @@ export const useAuthStore = create((set, get) => ({
     }
     try {
       const me = await api.get('/me')
-      set({ role: me.role === 'manager' ? 'manager' : 'leadership', roleLoaded: true })
+      set({ role: me.role === 'manager' ? 'manager' : 'leadership', isAdmin: me.isAdmin === true, roleLoaded: true })
     } catch {
-      set({ role: 'leadership', roleLoaded: true })
+      set({ role: 'leadership', isAdmin: false, roleLoaded: true })
     }
   },
 }))

@@ -96,7 +96,8 @@ app.use('/eval/*', async (c, next) => {
 })
 
 // Every route needs an authenticated, role-assigned user. Writes and the AI
-// call require 'manager'; 'leadership' is read-only.
+// call require 'manager'; 'leadership' is read-only. Renaming or deleting a
+// team additionally requires an admin (ADMIN_EMAILS), see requireAdmin.
 app.use('*', async (c, next) => {
   const { user, unauthenticated, unavailable } = await resolveUser(c.req.raw.headers, c.env)
   if (unavailable) return c.json({ error: 'authentication service unavailable' }, 503)
@@ -112,6 +113,8 @@ app.use('*', async (c, next) => {
   c.set('user', user)
   await next()
 })
+
+const ADMIN_ONLY = { error: 'admin role required' }
 
 app.get('/me', (c) => c.json(c.get('user')))
 
@@ -162,6 +165,8 @@ app.patch('/teams/:id', async (c) => {
 
   const row = await c.env.DB.prepare('SELECT * FROM teams WHERE id = ?').bind(id).first<TeamRow>()
   if (!row) return c.json({ error: 'team not found' }, 404)
+  // A team lead may edit cohort tags and capabilities; only an admin may rename.
+  if (body.name !== undefined && body.name.trim() !== row.name && !c.get('user').isAdmin) return c.json(ADMIN_ONLY, 403)
   if ((body.name ?? '').length > MAX_NAME || (body.sizeBucket ?? '').length > MAX_SHORT || (body.functionType ?? '').length > MAX_SHORT) {
     return c.json({ error: 'a field is too long' }, 400)
   }
@@ -181,6 +186,7 @@ app.patch('/teams/:id', async (c) => {
 })
 
 app.delete('/teams/:id', async (c) => {
+  if (!c.get('user').isAdmin) return c.json(ADMIN_ONLY, 403)
   const id = c.req.param('id')
   await c.env.DB.prepare('DELETE FROM teams WHERE id = ?').bind(id).run()
   // buildings cascade via the FK; signal_weeks too (harmless if there are none)

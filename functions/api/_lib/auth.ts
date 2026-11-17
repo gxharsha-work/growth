@@ -16,9 +16,21 @@ export type AuthEnv = {
   ACCESS_AUD?: string
   ENVIRONMENT?: string
   DEV_AUTH_ROLE?: string
+  ADMIN_EMAILS?: string // comma-separated; admins may rename and delete teams
 }
 
-export type AuthedUser = { email: string; role: Role }
+export type AuthedUser = { email: string; role: Role; isAdmin: boolean }
+
+// Admins are named in configuration, not in D1, so the list cannot be edited
+// through the app itself. An admin always has manager rights.
+export function adminEmails(env: AuthEnv): Set<string> {
+  return new Set(
+    (env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+  )
+}
 
 // The Access key server could not be reached: fail closed, but say so (503) rather than crash.
 export class AuthUnavailableError extends Error {}
@@ -109,7 +121,8 @@ export async function resolveUser(
 ): Promise<{ user: AuthedUser | null; unauthenticated: boolean; unavailable?: boolean }> {
   if (env.ENVIRONMENT !== 'production' && env.DEV_AUTH_ROLE) {
     const role = env.DEV_AUTH_ROLE as Role
-    return { user: { email: 'dev@localhost', role }, unauthenticated: false }
+    // Local development only: a dev manager is also an admin so every control can be exercised.
+    return { user: { email: 'dev@localhost', role, isAdmin: role === 'manager' }, unauthenticated: false }
   }
 
   const token = headers.get('Cf-Access-JWT-Assertion')
@@ -125,7 +138,8 @@ export async function resolveUser(
   }
   if (!email) return { user: null, unauthenticated: true }
 
-  const role = await lookupRole(env.DB, email)
+  const isAdmin = adminEmails(env).has(email)
+  const role = isAdmin ? 'manager' : await lookupRole(env.DB, email)
   if (!role) return { user: null, unauthenticated: false }
-  return { user: { email, role }, unauthenticated: false }
+  return { user: { email, role, isAdmin }, unauthenticated: false }
 }
