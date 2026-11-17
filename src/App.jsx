@@ -91,7 +91,7 @@ export default function App() {
         <>
           <Canvas
             className="app-canvas"
-            shadows="soft"
+            shadows="percentage"
             gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
             camera={{ fov: 42, near: 0.1, far: 500 }}
           >

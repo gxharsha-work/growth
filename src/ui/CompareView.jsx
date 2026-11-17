@@ -53,7 +53,7 @@ export default function CompareView() {
             </div>
             <div className="compare-canvas-wrap">
               <Canvas
-                shadows="soft"
+                shadows="percentage"
                 dpr={[1, 1.5]}
                 gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
                 camera={{ fov: 42, near: 0.1, far: 500 }}

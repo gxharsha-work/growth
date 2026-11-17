@@ -102,4 +102,12 @@ await suite.test('garden renders faded (ghost) when there is no GitHub data', as
   assert(/ghost=\{noGardenData\}/.test(src), 'Commons does not pass ghost')
 })
 
+// ---- IT-04: no deprecated three.js shadow map requested ----
+await suite.test('IT-04: no Canvas asks for the removed PCFSoftShadowMap (shadows="soft")', async () => {
+  for (const f of ['src/App.jsx', 'src/ui/CompareView.jsx']) {
+    const src = fs.readFileSync(`${ROOT}${f}`, 'utf8')
+    assert(!/shadows="soft"/.test(src) && /shadows="percentage"/.test(src), f)
+  }
+})
+
 suite.done()
