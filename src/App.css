@@ -111,6 +111,7 @@
   width: min(340px, calc(100vw - 48px));
   padding: 14px 16px;
   border-radius: 18px;
+  background: rgba(255, 255, 255, 0.97); /* opaque: it overlaps the left panel */
   font-size: 12.5px;
   line-height: 1.45;
   color: #2b323b;
