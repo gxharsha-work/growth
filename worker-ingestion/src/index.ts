@@ -68,10 +68,9 @@ export default {
     )
   },
 
-  // Manual trigger for testing after deploy: GET the Worker's own URL.
-  // Not linked from the app anywhere — a convenience for `curl`/browser
-  // during setup, same information a `wrangler tail` during the real cron
-  // fire would show.
+  // Manual trigger for local testing (`wrangler dev`). Unreachable in
+  // production: wrangler.toml sets workers_dev = false, so the Worker has no
+  // public URL and the daily cron is its only trigger.
   async fetch(_request: Request, env: Env) {
     const log = await ingest(env)
     return new Response(log.join('\n') + '\n', { headers: { 'content-type': 'text/plain' } })
