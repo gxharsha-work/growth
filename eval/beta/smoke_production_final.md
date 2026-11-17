@@ -1,6 +1,6 @@
 # Smoke test
 
-23 of 23 checks pass against https://growth-3it.pages.dev (2026-11-17T03:51:58.397Z)
+23 of 23 checks pass against https://growth-3it.pages.dev (2026-11-17T04:01:43.723Z)
 
 | Check | Result | Detail |
 | --- | --- | --- |
@@ -15,7 +15,7 @@
 | anonymous PATCH /api/teams/solstice is blocked | PASS | HTTP 302 |
 | anonymous POST /api/teams is blocked | PASS | HTTP 302 |
 | anonymous POST /api/insight is blocked | PASS | HTTP 302 |
-| signed in: GET /api/health reports ok | PASS | HTTP 200, {"d1":{"status":"ok","latencyMs":22},"workersAi":{"status":"bound"},"ingestion":{"status":"fresh","lastRun":"2026-11-17T03:13:27.017Z","ageHours":0.6}} |
+| signed in: GET /api/health reports ok | PASS | HTTP 200, {"d1":{"status":"ok","latencyMs":35},"workersAi":{"status":"bound"},"ingestion":{"status":"fresh","lastRun":"2026-11-17T03:13:27.017Z","ageHours":0.8}} |
 | signed in: GET /api/me names the user | PASS | HTTP 200, role manager, admin true |
 | signed in: /api/teams/platform/signals has no raw text | PASS | HTTP 200 |
 | signed in: /api/teams/platform/buildings has no raw text | PASS | HTTP 200 |
