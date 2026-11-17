@@ -38,6 +38,9 @@ JIRA_BOARD_ID = "1"
 GITHUB_REPO = "gxharsha-work/growth"
 # After-hours commits are judged in the team's local time.
 TEAM_TIMEZONE = "America/New_York"
+# After-hours share counts commits on this branch only (merge commits and
+# AI co-authored commits are excluded).
+GITHUB_BRANCH = "main"
 GOOGLE_CALENDAR_CLIENT_ID = "107182987367-2qe673pnt7ugu0imv4fau28ieckc2hbv.apps.googleusercontent.com"
 
 # Workers Logs: keep each cron run's log lines (written / failed per source)

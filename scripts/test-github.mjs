@@ -36,7 +36,7 @@ function fakeGithub({ pulls, reviews, commitsByBranch }) {
   }
   return { calls, restore: () => { globalThis.fetch = real } }
 }
-const commit = (sha, login, date) => ({ sha, author: login ? { login } : null, commit: { author: { date } } })
+const commit = (sha, login, date, message = 'Fix things', parents = [{}]) => ({ sha, author: login ? { login } : null, parents, commit: { author: { date }, message } })
 const ENV = { GITHUB_REPO: 'org/repo', TEAM_TIMEZONE: 'America/New_York' }
 const FIXTURE = {
   pulls: [
@@ -50,8 +50,18 @@ const FIXTURE = {
     2: [{ user: { login: 'alice' }, submitted_at: '2026-10-20T13:00:00Z' }],
   },
   commitsByBranch: {
-    main: [commit('a1', 'alice', '2026-10-15T15:00:00Z'), commit('a2', 'alice', '2026-10-16T00:30:00Z'), commit('m1', 'mallory', '2026-10-16T01:00:00Z')],
-    feature: [commit('a2', 'alice', '2026-10-16T00:30:00Z'), commit('b1', 'Bob', '2026-10-17T22:00:00Z'), commit('x1', null, '2026-10-17T02:00:00Z')],
+    main: [
+      commit('a1', 'alice', '2026-10-15T15:00:00Z'),
+      commit('a2', 'alice', '2026-10-16T00:30:00Z'),
+      commit('m1', 'mallory', '2026-10-16T01:00:00Z'),
+      commit('b1', 'Bob', '2026-10-17T22:00:00Z'),
+      commit('x1', null, '2026-10-17T02:00:00Z'),
+      commit('ai1', 'alice', '2026-10-18T02:00:00Z', 'Add feature\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'),
+      commit('ai2', 'bob', '2026-10-18T03:00:00Z', 'Tweak\n\nco-authored-by: GitHub Copilot <copilot@github.com>'),
+      commit('pair', 'bob', '2026-10-18T04:00:00Z', 'Pairing\n\nCo-authored-by: Dana <dana@example.com>'),
+      commit('mg1', 'alice', '2026-10-19T03:00:00Z', 'Merge pull request #1', [{}, {}]),
+    ],
+    feature: [commit('f1', 'alice', '2026-10-16T02:30:00Z')],
   },
 }
 
@@ -67,8 +77,9 @@ await suite.test('opted-in members only; review turnaround and after-hours share
     const waiting = (NOW - Date.parse('2026-10-20T12:00:00Z')) / 3_600_000
     const expected = Math.round(((6 + waiting + 24) / 3) * 10) / 10
     assert(g.prCount === 3 && g.avgReviewTurnaroundHours === expected, JSON.stringify(g))
-    // Commits a1 (11:00 EDT, day), a2 (20:30 EDT, late; on two branches, counted once), b1 (18:00 EDT, day). m1 and x1 excluded.
-    assert(g.sample.commits === 3 && g.pctCommitsAfter7pm === 33, JSON.stringify(g))
+    // main only: a1 (11:00 EDT, day), a2 (20:30 EDT, late), b1 (18:00 EDT, day), pair (00:00 EDT, late; a human co-author is fine).
+    // Excluded: m1 (not opted in), x1 (no login), ai1/ai2 (AI co-author), mg1 (merge commit), f1 (feature branch).
+    assert(g.sample.commits === 4 && g.pctCommitsAfter7pm === 50 && g.sample.excludedAiCommits === 2, JSON.stringify(g))
     assert(g.sample.reviewedPrs === 1 && g.sample.waitingPrs === 2, JSON.stringify(g.sample))
     return `${g.prCount} PRs, ${g.avgReviewTurnaroundHours} h, ${g.pctCommitsAfter7pm}% after hours`
   } finally { f.restore() }
@@ -94,6 +105,22 @@ await suite.test('a sprint with commits but no PRs gets no GitHub row ("No data"
     const [r] = await gh.runGithubIngestion(ENV, [OLD], new Set(['alice']), [], NOW)
     assert(r.github === null, JSON.stringify(r.github))
   } finally { f.restore() }
+})
+await suite.test('AI co-author trailers are recognised; human co-authors are not', async () => {
+  assert(gh.isAiCoAuthored('x\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>'), 'claude')
+  assert(gh.isAiCoAuthored('x\nCo-authored-by: Copilot <copilot@github.com>'), 'copilot')
+  assert(!gh.isAiCoAuthored('x\nCo-authored-by: Dana <dana@example.com>'), 'human')
+  assert(!gh.isAiCoAuthored('Mention Claude in the body only'), 'body mention is not a trailer')
+})
+await suite.test('a GitHub error reports GitHub\'s reason, never the token', async () => {
+  const real = globalThis.fetch
+  globalThis.fetch = async () => new Response(JSON.stringify({ message: 'Resource not accessible by personal access token' }), { status: 403 })
+  try {
+    await gh.runGithubIngestion({ ...ENV, GITHUB_TOKEN: 'secret-token-123' }, [SPRINT], new Set(['alice']), [], NOW)
+    throw new Error('expected a failure')
+  } catch (e) {
+    assert(/403: Resource not accessible/.test(e.message) && !e.message.includes('secret-token-123'), e.message)
+  } finally { globalThis.fetch = real }
 })
 await suite.test('after-hours uses team local time (19:00 to 05:59), not UTC', async () => {
   assert(gh.isAfterHours('2026-10-16T00:30:00Z', 'America/New_York') === true, '20:30 ET')
