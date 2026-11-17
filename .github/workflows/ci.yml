@@ -1,0 +1,33 @@
+# Runs every check on every push and pull request: lint, type-check (app and
+# ingestion Worker), production build, and npm test (unit and API tests,
+# the stress suite, and the Sprint 8 validation regression gate).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # node:sqlite (API tests) needs Node >= 22.5
+          cache: npm
+      - run: npm ci
+      - run: npm ci
+        working-directory: worker-ingestion
+      - name: Lint
+        run: npm run lint
+      - name: Type-check (app and API)
+        run: npx tsc --noEmit
+      - name: Type-check (ingestion Worker)
+        run: ../node_modules/.bin/tsc --noEmit -p tsconfig.json
+        working-directory: worker-ingestion
+      - name: Production build
+        run: npm run build
+      - name: Tests and Sprint 8 regression gate
+        run: npm test
