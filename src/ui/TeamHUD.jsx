@@ -321,6 +321,20 @@ export default function TeamHUD() {
         </div>
       )}
 
+      {!isCompare && (
+        <div
+          className={`hud-warning-wrap${showWarning ? ' hud-warning-wrap--visible' : ''}`}
+          role="status"
+          aria-live="polite"
+        >
+          {/* Text exists only when the rule fired this week, so nothing stale can be read. */}
+          {showWarning && (
+            <div className="hud-warning" title={explanation.rule}>
+              <TriangleAlert size={16} />
+              <span>{explanation.headline}</span>
+            </div>
+          )}
+
       {!isCompare && weekHealth && (
         <div className="hud-context glass">
           {weekHealth.enoughData && explanation && (
@@ -378,19 +392,6 @@ export default function TeamHUD() {
         {isCompare ? 'Back to village' : 'Compare teams'}
       </button>
 
-      {!isCompare && (
-        <div
-          className={`hud-warning-wrap${showWarning ? ' hud-warning-wrap--visible' : ''}`}
-          role="status"
-          aria-live="polite"
-        >
-          {/* Text exists only when the rule fired this week, so nothing stale can be read. */}
-          {showWarning && (
-            <div className="hud-warning" title={explanation.rule}>
-              <TriangleAlert size={16} />
-              <span>{explanation.headline}</span>
-            </div>
-          )}
         </div>
       )}
     </div>

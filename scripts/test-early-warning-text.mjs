@@ -102,7 +102,7 @@ const T = (id, size, fn) => ({ id, cohort: { sizeBucket: size, functionType: fn 
 const TEAMS = [T('platform', '6-10 engineers', 'Backend/Platform'), T('backend', '6-10 engineers', 'Backend/Platform'), T('solstice', '1-5 engineers', 'Growth Marketing'), T('new', 'Unspecified', 'Unspecified')]
 await suite.test('cohort reason names both tags, who set them, and the peer count', async () => {
   const c = m.describeCohort(TEAMS[0], TEAMS)
-  assert(c.label === '6-10 engineers · Backend/Platform' && c.peerCount === 1 && /team lead tagged it/.test(c.reason) && /1 other team does/.test(c.reason), c.reason)
+  assert(c.label === '6-10 engineers · Backend/Platform' && c.peerCount === 1 && /set by the team lead/.test(c.reason) && /1 other team does/.test(c.reason), c.reason)
   return c.reason
 })
 await suite.test('a team with no matching peer is told there is no comparison', async () => {

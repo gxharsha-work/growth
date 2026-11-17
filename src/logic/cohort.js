@@ -14,9 +14,9 @@ export function describeCohort(team, teams) {
     label: `${sizeBucket} · ${functionType}`,
     peerCount: peers.length,
     reason: unset
-      ? 'Cohort tags are not set yet, so this team has no peer comparison. The team lead can set them with the edit button.'
-      : `In this cohort because the team lead tagged it "${sizeBucket}" and "${functionType}". Peers must match both tags: ${
-          peers.length === 0 ? 'no other team does yet, so there is no peer comparison.' : `${peers.length} other team${peers.length === 1 ? '' : 's'} do${peers.length === 1 ? 'es' : ''}.`
+      ? 'Tags not set yet, so no peer comparison. The team lead can set them with the edit button.'
+      : `Tags set by the team lead. Peers must match both tags: ${
+          peers.length === 0 ? 'no other team does yet, so no peer comparison.' : `${peers.length} other team${peers.length === 1 ? '' : 's'} do${peers.length === 1 ? 'es' : ''}.`
         }`,
   }
 }
