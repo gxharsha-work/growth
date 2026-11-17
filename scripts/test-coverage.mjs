@@ -102,6 +102,15 @@ await suite.test('garden renders faded (ghost) when there is no GitHub data', as
   assert(/ghost=\{noGardenData\}/.test(src), 'Commons does not pass ghost')
 })
 
+// ---- source badges ----
+await suite.test('source badges: live -> Live, demo -> Simulated, placeholder or missing -> No data, each with a tooltip', async () => {
+  const hud = fs.readFileSync(`${ROOT}src/ui/TeamHUD.jsx`, 'utf8')
+  for (const [k, label] of [['live', 'Live'], ['demo', 'Simulated'], ['placeholder', 'No data']]) {
+    assert(new RegExp(`${k}: \\{ label: '${label}', tip: `).test(hud), `${k} badge`)
+  }
+  assert(/GitHub: not connected/.test(hud), 'GitHub pill missing')
+})
+
 // ---- IT-04: no deprecated three.js shadow map requested ----
 await suite.test('IT-04: no Canvas asks for the removed PCFSoftShadowMap (shadows="soft")', async () => {
   for (const f of ['src/App.jsx', 'src/ui/CompareView.jsx']) {

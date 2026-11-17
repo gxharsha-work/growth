@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow'
 import {
   Ticket,
   CalendarDays,
+  GitPullRequest,
   ArrowLeftRight,
   ArrowLeft,
   TriangleAlert,
@@ -27,9 +28,22 @@ const RING_RADIUS = 24
 const RING_LENGTH = 2 * Math.PI * RING_RADIUS
 
 // Provenance tag shown on a signal pill: where this week's number came from.
+// Where a signal's numbers come from, in words a manager can check.
+const SOURCE_BADGE = {
+  live: { label: 'Live', tip: "Ingested daily from this team's real tools." },
+  demo: { label: 'Simulated', tip: 'Sample data for a demo team, not real activity.' },
+  placeholder: { label: 'No data', tip: 'Not connected for this team, so it is left out of the score.' },
+}
+const counted = (state) => state === 'live' || state === 'demo'
+
 function SourceTag({ state }) {
-  if (!state) return null
-  return <span className={`hud-source-tag hud-source-tag--${state}`}>{state}</span>
+  const badge = SOURCE_BADGE[state] ?? SOURCE_BADGE.placeholder
+  const kind = SOURCE_BADGE[state] ? state : 'placeholder'
+  return (
+    <span className={`hud-source-tag hud-source-tag--${kind}`} title={badge.tip} aria-label={`${badge.label}: ${badge.tip}`}>
+      {badge.label}
+    </span>
+  )
 }
 
 export default function TeamHUD() {
@@ -357,16 +371,36 @@ export default function TeamHUD() {
       {!isCompare && weekHealth && (
         <SignalPill
           icon={<Ticket size={15} />}
-          label={`Jira: ${weekHealth.signals.jira.avgCycleTimeDays}d cycle · ${weekHealth.signals.jira.sprintCompletionPct}% sprint`}
-          tag={<SourceTag state={weekHealth.sources?.jira} />}
+          label={
+            counted(weekHealth.sources?.jira ?? 'demo')
+              ? `Jira: ${weekHealth.signals.jira.avgCycleTimeDays}d cycle · ${weekHealth.signals.jira.sprintCompletionPct}% sprint`
+              : 'Jira: no data this period'
+          }
+          tag={<SourceTag state={weekHealth.sources?.jira ?? 'demo'} />}
+        />
+      )}
+
+      {!isCompare && weekHealth && (
+        <SignalPill
+          icon={<GitPullRequest size={15} />}
+          label={
+            counted(weekHealth.sources?.github ?? 'demo')
+              ? `GitHub: ${weekHealth.signals.github.avgReviewTurnaroundHours}h reviews · ${weekHealth.signals.github.pctCommitsAfter7pm}% after 7pm`
+              : 'GitHub: not connected'
+          }
+          tag={<SourceTag state={weekHealth.sources?.github ?? 'demo'} />}
         />
       )}
 
       {!isCompare && weekHealth && (
         <SignalPill
           icon={<CalendarDays size={15} />}
-          label={`Meeting load: ${weekHealth.signals.calendar.avgMeetingHoursPerWeek}h this week`}
-          tag={<SourceTag state={weekHealth.sources?.calendar} />}
+          label={
+            counted(weekHealth.sources?.calendar ?? 'demo')
+              ? `Meeting load: ${weekHealth.signals.calendar.avgMeetingHoursPerWeek}h this week`
+              : 'Meeting load: no data this period'
+          }
+          tag={<SourceTag state={weekHealth.sources?.calendar ?? 'demo'} />}
         />
       )}
 
