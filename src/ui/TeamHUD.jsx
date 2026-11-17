@@ -148,7 +148,7 @@ export default function TeamHUD() {
 
   return (
     <div className="hud">
-      <div className="hud-teams glass" role={isCompare ? 'group' : 'tablist'} aria-label="Team">
+      <div className="hud-teams glass" role="group" aria-label="Teams">
         {isCompare && (
           <div className="hud-compare-picker-head">
             <span>{compareTeamIds.length}/4 selected</span>
@@ -164,9 +164,9 @@ export default function TeamHUD() {
           return (
             <div key={team.id} className="hud-team-row">
               <button
-                role={isCompare ? 'checkbox' : 'tab'}
+                role={isCompare ? 'checkbox' : undefined}
                 aria-checked={isCompare ? checked : undefined}
-                aria-selected={!isCompare ? currentTeam === team.id : undefined}
+                aria-pressed={!isCompare ? currentTeam === team.id : undefined}
                 aria-disabled={capped}
                 className={`hud-team${
                   !isCompare && currentTeam === team.id ? ' hud-team--active' : ''

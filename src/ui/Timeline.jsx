@@ -42,6 +42,8 @@ export default function Timeline() {
       </div>
       <input
         className="timeline-slider"
+        aria-label="Week to show"
+        aria-valuetext={title}
         type="range"
         min={0}
         max={Math.max(0, count - 1)}

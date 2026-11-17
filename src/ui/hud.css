@@ -66,6 +66,23 @@
   background: var(--ink);
 }
 
+/* score chips on the dark active row need lighter text for WCAG AA contrast */
+.hud-team--active .hud-team-score--good {
+  color: #7ee2b4;
+}
+
+.hud-team--active .hud-team-score--ok {
+  color: #ffd27a;
+}
+
+.hud-team--active .hud-team-score--low {
+  color: #ffadb0;
+}
+
+.hud-team--active .hud-team-score--none {
+  color: #d5dae0;
+}
+
 .hud-team-name {
   overflow: hidden;
   text-overflow: ellipsis;

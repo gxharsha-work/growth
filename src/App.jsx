@@ -87,7 +87,7 @@ export default function App() {
   const isCompare = viewMode === 'compare'
 
   return (
-    <div className="app-root">
+    <main className="app-root">
       {isCompare ? (
         <CompareView />
       ) : hasTeam ? (
@@ -113,6 +113,6 @@ export default function App() {
         <ReportIssue />
       </div>
       <BuildFooter />
-    </div>
+    </main>
   )
 }
