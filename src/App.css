@@ -84,7 +84,7 @@
   position: fixed;
   left: 24px;
   bottom: 40px;
-  z-index: 6;
+  z-index: 30; /* above the left panel (10) so the legend and report panels open on top */
   display: flex;
   gap: 8px;
 }
