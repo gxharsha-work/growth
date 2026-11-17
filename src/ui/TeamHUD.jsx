@@ -67,6 +67,8 @@ export default function TeamHUD() {
   // Subscribed purely so this re-renders once signals finish loading async
   // (getTeamWeek below reads the store imperatively, not reactively).
   const signalSource = useSignalsStore((s) => s.sourceByTeam[currentTeam])
+  const loadError = useSignalsStore((s) => s.errorByTeam[currentTeam])
+  const withheld = useSignalsStore((s) => s.consentByTeam[currentTeam]?.scoreAllowed === false)
   const explanation = getWeekExplanation(currentTeam, currentWeek)
 
   const [editingId, setEditingId] = useState(null) // null = create mode
@@ -289,6 +291,17 @@ export default function TeamHUD() {
           </div>
         )}
       </div>
+
+      {!isCompare && !weekHealth && loadError && (
+        <div className="hud-signal hud-signal--muted glass" role="alert">
+          This team's data could not be loaded. Check your connection and refresh the page.
+        </div>
+      )}
+      {!isCompare && !weekHealth && !loadError && !withheld && currentTeam && (
+        <div className="hud-signal hud-signal--muted glass" role="status">
+          Loading team data…
+        </div>
+      )}
 
       {!isCompare && weekHealth && !weekHealth.enoughData && (
         <div className="hud-score glass hud-score--none" role="status" aria-live="polite">

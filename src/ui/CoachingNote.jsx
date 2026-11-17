@@ -50,7 +50,14 @@ export default function CoachingNote({ teamId, weekHealth }) {
     } catch (err) {
       if (keyRef.current !== requestKey) return
       // The backend refuses coaching on demo/generated teams (no live data).
-      setError(err.message.includes('demo_data') ? 'demo' : err.message.includes('not_enough_data') ? 'not_enough_data' : err.message)
+      const m = err.message
+      setError(
+        m.includes('demo_data') ? 'demo'
+          : m.includes('not_enough_data') ? 'not_enough_data'
+          : m.includes('consent_required') ? 'consent'
+          : m.includes('(429)') ? 'rate_limited'
+          : 'unavailable'
+      )
       setPhase('error')
     }
   }
@@ -120,7 +127,11 @@ export default function CoachingNote({ teamId, weekHealth }) {
               ? 'AI coaching needs a team with live data — this team is on demo data.'
               : error === 'not_enough_data'
               ? 'Not enough data this week for a coaching note.'
-              : `Couldn't generate a suggestion right now (${error}). The score and signals above are unaffected.`}
+              : error === 'consent'
+              ? 'Coaching starts once at least 3 team members have opted in.'
+              : error === 'rate_limited'
+              ? 'You have asked for 10 notes this hour. Please try again later.'
+              : "Couldn't get a suggestion right now. The score and signals above are unaffected."}
             <button className="coaching-note-reset coach-bubble-retry" onClick={() => setPhase('idle')}>
               Try again
             </button>

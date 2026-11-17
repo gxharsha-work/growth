@@ -15,14 +15,15 @@ import { ROOT, makeSuite, assert } from './lib/api-harness.mjs'
 // zustand v5 renders from each store's INITIAL state on the server, so each
 // case is its own bundle whose app and signals stores start on the chosen
 // team and week (a text substitution in those two files, test-only).
-async function renderCase(teamId, week) {
+async function renderCase(teamId, week, { loaded = true, error = false } = {}) {
   const initial = {
     name: 'test-initial-state',
     setup(b) {
       b.onLoad({ filter: /src[\\/]store[\\/](appStore|signalsStore)\.js$/ }, async (args) => {
         let code = fs.readFileSync(args.path, 'utf8')
         code = code.replace('currentTeam: firstTeamId(),', `currentTeam: ${JSON.stringify(teamId)},`).replace('currentWeek: 0,', `currentWeek: ${week},`)
-        code = code.replace('weeklyByTeam: {},', `weeklyByTeam: { [${JSON.stringify(teamId)}]: getWeeklySignalsForTeam(${JSON.stringify(teamId)}) },`)
+        if (loaded) code = code.replace('weeklyByTeam: {},', `weeklyByTeam: { [${JSON.stringify(teamId)}]: getWeeklySignalsForTeam(${JSON.stringify(teamId)}) },`)
+        if (error) code = code.replace('errorByTeam: {},', `errorByTeam: { [${JSON.stringify(teamId)}]: true },`)
         code = code.replace('sourceByTeam: {},', `sourceByTeam: { [${JSON.stringify(teamId)}]: 'hand-tuned' },`)
         return { contents: code, loader: 'jsx' }
       })
@@ -46,7 +47,7 @@ async function renderCase(teamId, week) {
   // the repo to resolve them: node_modules/.cache is git-ignored.
   const dir = path.join(ROOT, 'node_modules', '.cache', 'growth-test')
   fs.mkdirSync(dir, { recursive: true })
-  const file = path.join(dir, `hud-${teamId}-${week}.mjs`)
+  const file = path.join(dir, `hud-${teamId}-${week}-${loaded}-${error}.mjs`)
   fs.writeFileSync(file, out.outputFiles[0].text)
   return (await import(pathToFileURL(file).href)).html
 }
@@ -79,4 +80,16 @@ for (const [team, week, flagged] of [['platform', 7, false], ['backend', 5, true
     return flagged ? 'banner inside wrapper only' : 'wrapper empty'
   })
 }
+await suite.test('data still loading: a "Loading team data" status, not a blank HUD', async () => {
+  const html = await renderCase('platform', 0, { loaded: false })
+  assert(html.includes('Loading team data') && html.includes('role="status"'), 'no loading state')
+})
+await suite.test('data failed to load: a plain-language alert, no raw error text', async () => {
+  const html = await renderCase('platform', 0, { loaded: false, error: true })
+  assert(html.includes('could not be loaded') && html.includes('role="alert"') && !html.includes('Loading team data'), 'no error state')
+})
+await suite.test('coaching errors never show raw server text', async () => {
+  const src = fs.readFileSync(`${ROOT}src/ui/CoachingNote.jsx`, 'utf8')
+  assert(!/\(\$\{error\}\)/.test(src) && /Please try again later/.test(src), 'raw error interpolated')
+})
 suite.done()

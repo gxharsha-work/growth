@@ -18,6 +18,7 @@ export const useSignalsStore = create((set, get) => ({
   weeklyByTeam: {}, // teamId -> array of { week, jira, github, calendar }
   sourceByTeam: {}, // teamId -> 'hand-tuned' | 'live' | 'generated'
   consentByTeam: {}, // teamId -> { total, consented, minConsented, scoreAllowed } (FR18)
+  errorByTeam: {}, // teamId -> true when the backend was reachable but this team's data failed to load
   loadedTeams: new Set(),
 
   // Loads a team's signals the first time it's viewed. Safe to call
@@ -30,13 +31,17 @@ export const useSignalsStore = create((set, get) => ({
       try {
         const { weeks, source, consent } = await api.get(`/teams/${teamId}/signals`)
         set((state) => ({
+          errorByTeam: { ...state.errorByTeam, [teamId]: false },
           weeklyByTeam: { ...state.weeklyByTeam, [teamId]: weeks },
           sourceByTeam: { ...state.sourceByTeam, [teamId]: source },
           consentByTeam: { ...state.consentByTeam, [teamId]: consent ?? null },
         }))
         return
       } catch (err) {
-        console.error(`Failed to load signals for ${teamId} from backend, using local data:`, err)
+        // The backend is up but this request failed: say so, never show bundled sample data instead.
+        console.error(`Failed to load signals for ${teamId}:`, err)
+        set((state) => ({ errorByTeam: { ...state.errorByTeam, [teamId]: true } }))
+        return
       }
     }
 
