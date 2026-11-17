@@ -58,6 +58,7 @@ export async function runGithubIngestion(
 ): Promise<GithubSprintResult[]> {
   const headers: Record<string, string> = { Accept: 'application/vnd.github+json', 'User-Agent': 'growth-ingestion', 'X-GitHub-Api-Version': '2022-11-28' }
   if (env.GITHUB_TOKEN) headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`
+  log.push(`GitHub: ${env.GITHUB_TOKEN ? 'authenticated with GITHUB_TOKEN' : 'no GITHUB_TOKEN set, using the anonymous rate limit'}`)
   const api = async <T>(path: string): Promise<T> => {
     const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}${path}`, { headers })
     if (!res.ok) {
